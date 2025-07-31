@@ -1,4 +1,6 @@
 package alex.demo
 package tools
 
-object ExternalServiceTool
+object ExternalServiceTool:
+  ???
+end ExternalServiceTool

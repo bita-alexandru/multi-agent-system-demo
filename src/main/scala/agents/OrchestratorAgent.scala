@@ -1,7 +1,7 @@
 package alex.demo
 package agents
 
-import agents.BaseAgent.CommandProps
+import agents.BaseAgent.{Command, CommandProps}
 
 import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
@@ -30,6 +30,11 @@ object OrchestratorAgent extends BaseAgent:
     println(systemPrompt)
     Behaviors.same
   end doEnd
+
+  def doCallTool(context: ActorContext[Command], systemPrompt: Option[String], commandProps: CommandProps): Behavior[Command] =
+    println(systemPrompt)
+    Behaviors.same
+  end doCallTool
 
 end OrchestratorAgent
 

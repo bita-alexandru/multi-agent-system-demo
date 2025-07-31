@@ -7,8 +7,10 @@ orchestrator-agent:
     review prompt
   end: >
     end prompt
+  call-tool: >
+    call tool prompt
 ---
-MainActorSystem:
+worker-agent:
   start: >
     start prompt
   next: >
@@ -17,3 +19,5 @@ MainActorSystem:
     review prompt
   end: >
     end prompt
+  call-tool: >
+    call tool prompt

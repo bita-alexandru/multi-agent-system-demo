@@ -1,4 +1,6 @@
 package alex.demo
 package tools
 
-object InternalServiceTool
+object InternalServiceTool:
+  ???
+end InternalServiceTool

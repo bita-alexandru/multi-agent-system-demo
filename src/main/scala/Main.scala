@@ -1,16 +1,17 @@
 package alex.demo
 
-import agents.BaseAgent.CommandProps
+import agents.BaseAgent.{Command, CommandProps}
 import agents.OrchestratorAgent
 
 import org.apache.pekko.actor.typed.ActorSystem
 
 @main
 def main(): Unit =
-  val orchestratorAgent: ActorSystem[OrchestratorAgent.Command] =
-    ActorSystem(OrchestratorAgent(), "MainActorSystem")
-  orchestratorAgent ! OrchestratorAgent.Command.Start(props = CommandProps())
-  orchestratorAgent ! OrchestratorAgent.Command.Next(props = CommandProps())
-  orchestratorAgent ! OrchestratorAgent.Command.Review(props = CommandProps())
-  orchestratorAgent ! OrchestratorAgent.Command.End(props = CommandProps())
+  val orchestratorAgent: ActorSystem[Command] =
+    ActorSystem(OrchestratorAgent(), "orchestrator-agent")
+  orchestratorAgent ! Command.Start(props = CommandProps())
+  orchestratorAgent ! Command.Next(props = CommandProps())
+  orchestratorAgent ! Command.Review(props = CommandProps())
+  orchestratorAgent ! Command.End(props = CommandProps())
+  orchestratorAgent ! Command.CallTool(props = CommandProps())
 end main
