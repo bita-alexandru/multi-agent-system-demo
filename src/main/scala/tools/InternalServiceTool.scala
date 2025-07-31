@@ -1,6 +1,4 @@
-package demo.alex.application
+package alex.demo
 package tools
 
-object InternalServiceTool {
-
-}
+object InternalServiceTool

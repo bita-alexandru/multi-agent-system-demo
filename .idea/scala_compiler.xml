@@ -2,6 +2,6 @@
 <project version="4">
   <component name="ScalaCompilerConfiguration">
     <option name="separateProdTestSources" value="true" />
-    <profile name="sbt 1" modules="pekko-multi-agent-system,pekko-multi-agent-system.main,pekko-multi-agent-system.test" />
+    <profile name="sbt 1" modules="multi-agent-system-demo,multi-agent-system-demo.main,multi-agent-system-demo.test" />
   </component>
 </project>

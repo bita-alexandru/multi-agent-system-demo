@@ -1,0 +1,19 @@
+orchestrator-agent:
+  start: >
+    start prompt
+  next: >
+    next prompt
+  review: >
+    review prompt
+  end: >
+    end prompt
+---
+MainActorSystem:
+  start: >
+    start prompt
+  next: >
+    next prompt
+  review: >
+    review prompt
+  end: >
+    end prompt

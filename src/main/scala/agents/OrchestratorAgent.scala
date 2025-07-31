@@ -1,21 +1,35 @@
-package demo.alex.application
+package alex.demo
 package agents
 
+import agents.BaseAgent.CommandProps
+
 import org.apache.pekko.actor.typed.Behavior
-import org.apache.pekko.actor.typed.scaladsl.Behaviors
+import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
 
-object OrchestratorAgent:
-  sealed trait Command
-  object Start extends Command
+object OrchestratorAgent extends BaseAgent:
+  def doStart(context: ActorContext[Command], systemPrompt: Option[String], commandProps: CommandProps): Behavior[Command] =
+    println(systemPrompt)
+    Behaviors.same
+  end doStart
 
-  def apply(): Behavior[Command] =
-    Behaviors.setup { context =>
-      Behaviors.receiveMessage {
-        case Start =>
-          println("start")
-          Behaviors.same
-        case _ =>
-          println("nothing")
-          Behaviors.same
-      }
-    }
+  private def takeInput(): Option[String] =
+    Option(scala.io.StdIn.readLine().trim).filter(_.nonEmpty)
+  end takeInput
+
+  def doNext(context: ActorContext[Command], systemPrompt: Option[String], commandProps: CommandProps): Behavior[Command] =
+    println(systemPrompt)
+    Behaviors.same
+  end doNext
+
+  def doReview(context: ActorContext[Command], systemPrompt: Option[String], commandProps: CommandProps): Behavior[Command] =
+    println(systemPrompt)
+    Behaviors.same
+  end doReview
+
+  def doEnd(context: ActorContext[Command], systemPrompt: Option[String], commandProps: CommandProps): Behavior[Command] =
+    println(systemPrompt)
+    Behaviors.same
+  end doEnd
+
+end OrchestratorAgent
+

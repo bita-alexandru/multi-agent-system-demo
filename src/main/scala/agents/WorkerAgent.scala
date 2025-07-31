@@ -1,6 +1,6 @@
-package demo.alex.application
+package alex.demo
 package agents
 
-object WorkerAgent {
-
-}
+object WorkerAgent:
+  ???
+end WorkerAgent
