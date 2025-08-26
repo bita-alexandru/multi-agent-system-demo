@@ -1,7 +1,7 @@
 package alex.demo
 package utils
 
-import agents.BaseAgent.Command
+import agents.Agent.Command
 
 import java.io.FileReader
 import scala.util.Try

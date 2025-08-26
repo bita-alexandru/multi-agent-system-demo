@@ -1,19 +1,20 @@
 package alex.demo
 package agents
 
-import agents.BaseAgent.{Command, CommandProps}
+import agents.Agent.{Command, CommandProps, ask}
 
 import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
 
-object OrchestratorAgent extends BaseAgent:
+object OrchestratorAgent extends Agent:
   def doStart(context: ActorContext[Command], systemPrompt: Option[String], commandProps: CommandProps): Behavior[Command] =
     println(systemPrompt)
+    print(ask("describe tic tac toe in a few words"))
     Behaviors.same
   end doStart
 
   private def takeInput(): Option[String] =
-    Option(scala.io.StdIn.readLine().trim).filter(_.nonEmpty)
+    Some(scala.io.StdIn.readLine().trim).filter(_.nonEmpty)
   end takeInput
 
   def doNext(context: ActorContext[Command], systemPrompt: Option[String], commandProps: CommandProps): Behavior[Command] =
