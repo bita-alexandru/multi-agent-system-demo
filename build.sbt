@@ -8,7 +8,7 @@ lazy val root = (project in file("."))
     idePackagePrefix := Some("alex.demo")
   )
 
-val PekkoVersion = "1.1.5"
+val PekkoVersion = "1.2.0"
 libraryDependencies += "org.apache.pekko" %% "pekko-actor-typed" % PekkoVersion
 
 libraryDependencies += "io.circe" %% "circe-yaml" % "1.15.0"

@@ -1,7 +1,7 @@
 package alex.demo
 package agents
 
-import agents.Agent.{Command, CommandProps, ask}
+import agents.Agent.{Command, CommandProps, askLlm}
 
 import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
@@ -9,7 +9,7 @@ import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
 object OrchestratorAgent extends Agent:
   def doStart(context: ActorContext[Command], systemPrompt: Option[String], commandProps: CommandProps): Behavior[Command] =
     println(systemPrompt)
-    print(ask("describe tic tac toe in a few words"))
+    print(askLlm("describe tic tac toe in a few words"))
     Behaviors.same
   end doStart
 
