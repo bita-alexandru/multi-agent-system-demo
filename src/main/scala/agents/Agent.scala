@@ -8,6 +8,7 @@ import io.circe.parser.*
 import cats.syntax.either.*
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
 import org.apache.pekko.actor.typed.{ActorRef, Behavior}
+import sttp.client4.Request
 import sttp.client4.quick.*
 
 import java.io.FileReader
@@ -44,6 +45,7 @@ end Agent
 
 object Agent:
   private val geminiApiKey: String = dotenv.get("GEMINI_API_KEY")
+  private val geminiBaseUrl: String = dotenv.get("GEMINI_BASE_URL")
 
   enum Command(val commandProps: CommandProps):
     case Start(props: CommandProps) extends Command(props)
@@ -66,6 +68,19 @@ object Agent:
     )
   end getSystemPrompts
 
+  @tailrec
+  private[agents] def makeRequestWithRetries[T](request: Request[T], retries: Int = 3): Option[T] =
+    if retries == 0 then
+      None
+    else
+      val response = request.send()
+      if response.code.isSuccess then
+        Some(response.body)
+      else
+        makeRequestWithRetries(request, retries - 1)
+    end if
+  end makeRequestWithRetries
+
   private[agents] def askLlm(prompt: String): Option[String] =
     val requestBody =
       Json.obj:
@@ -76,68 +91,21 @@ object Agent:
                 "text" -> Json.fromString(prompt)
 
     val request = quickRequest
-      .post(uri"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent")
+      .post(uri"$geminiBaseUrl")
       .header("Content-Type", "application/json")
       .header("X-goog-api-key", geminiApiKey)
       .body(requestBody.noSpaces)
 
-    @tailrec
-    def withRetries(retries: Int): Option[String] =
-      if retries == 0 then
-        None
-      else
-        val response = request.send()
-        val maybeText = parse(response.body).toOption
-          .flatMap:
-            _.hcursor
-              .downField("candidates").downArray
-              .downField("content")
-              .downField("parts").downArray
-              .get[String]("text").toOption
-
-        if maybeText.isDefined then
-          maybeText
-        else
-          println(s"Error trying to get a response from Gemini, response body is ${response.body}")
-          withRetries(retries - 1)
-        end if
-      end if
-    end withRetries
-
-    withRetries(2)
+    val maybeResponse = makeRequestWithRetries(request)
+    val response = maybeResponse.flatMap: response =>
+      parse(response).toOption.flatMap:
+        _.hcursor
+          .downField("candidates").downArray
+          .downField("content")
+          .downField("parts").downArray
+          .get[String]("text").toOption
+    response
   end askLlm
-
-  private[agents] def callTool(baseUrl: String, requestParams: Option[String], requestBody: Option[String]): Option[String] =
-    val request = quickRequest
-      .post(uri"$baseUrl")
-      .header("Content-Type", "application/json")
-      .body(requestBody.getOrElse(""))
-
-    @tailrec
-    def withRetries(retries: Int): Option[String] =
-      if retries == 0 then
-        None
-      else
-        val response = request.send()
-        val maybeText = parse(response.body).toOption
-          .flatMap:
-            _.hcursor
-              .downField("candidates").downArray
-              .downField("content")
-              .downField("parts").downArray
-              .get[String]("text").toOption
-
-        if maybeText.isDefined then
-          maybeText
-        else
-          println(s"Error trying to get a response from Gemini, response body is ${response.body}")
-          withRetries(retries - 1)
-        end if
-      end if
-    end withRetries
-
-    withRetries(2)
-  end callTool
 end Agent
 
 object AgentConfigs:
