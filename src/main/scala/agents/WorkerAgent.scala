@@ -16,24 +16,29 @@ object WorkerAgent extends Agent:
   private val postEmployeeDocEndpoint = dotenv.get("POST_EMPLOYEE_DOC_ENDPOINT")
   private val postEmployeeProfileEndpoint = dotenv.get("POST_EMPLOYEE_PROFILE_ENDPOINT")
 
-  def doStart(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command] =
+  def doStart(systemPrompt: Option[String], commandProps: CommandProps)
+    (using context: ActorContext[Command]): Behavior[Command] =
     systemPrompt.foreach(context.log.info)
     Behaviors.same
   end doStart
 
-  def doNext(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command] =
+  def doNext(systemPrompt: Option[String], commandProps: CommandProps)
+    (using context: ActorContext[Command]): Behavior[Command] =
     Behaviors.same
   end doNext
 
-  def doReview(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command] =
+  def doReview(systemPrompt: Option[String], commandProps: CommandProps)
+    (using context: ActorContext[Command]): Behavior[Command] =
     Behaviors.same
   end doReview
 
-  def doEnd(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command] =
+  def doEnd(systemPrompt: Option[String], commandProps: CommandProps)
+    (using context: ActorContext[Command]): Behavior[Command] =
     Behaviors.same
   end doEnd
 
-  def doCallTool(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command] =
+  def doCallTool(systemPrompt: Option[String], commandProps: CommandProps)
+    (using context: ActorContext[Command]): Behavior[Command] =
     systemPrompt.foreach(context.log.info)
     Behaviors.same
   end doCallTool
@@ -56,10 +61,18 @@ object WorkerAgent extends Agent:
     val request = quickRequest
       .get(uri"$serverBaseUrl:$serverPort/$getInternalDocsEndpoint")
       .header("Content-Type", "application/json")
-    List(makeRequestWithRetries(request))
+    makeRequestWithRetries(request).map: docs =>
+      docs
+        .split("(?i)(?=<!DOCTYPE html>)")
+        .toList
+        .filter(_.nonEmpty)
+        .map(Some(_))
+    .getOrElse(Nil)
+
   end callGetInternalDocsTool
 
-  private def callPostEmployeeDocTool(secret: String, filename: String, document: String)(using context: ActorContext[Command]): Option[String] =
+  private def callPostEmployeeDocTool(secret: String, filename: String, document: String)
+    (using context: ActorContext[Command]): Option[String] =
     val request = quickRequest
       .post(uri"$serverBaseUrl:$serverPort/$postEmployeeDocEndpoint?secret=$secret&filename=$filename")
       .header("Content-Type", "application/json")
@@ -67,7 +80,8 @@ object WorkerAgent extends Agent:
     makeRequestWithRetries(request)
   end callPostEmployeeDocTool
 
-  private def callPostEmployeeProfileTool(secret: String, profile: String)(using context: ActorContext[Command]): Option[String] =
+  private def callPostEmployeeProfileTool(secret: String, profile: String)
+    (using context: ActorContext[Command]): Option[String] =
     val request = quickRequest
       .post(uri"$serverBaseUrl:$serverPort/$postEmployeeProfileEndpoint?secret=$secret")
       .header("Content-Type", "application/json")

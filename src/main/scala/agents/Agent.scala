@@ -34,15 +34,20 @@ trait Agent:
         case null => Behaviors.same
   end apply
 
-  def doStart(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command]
+  def doStart(systemPrompt: Option[String], commandProps: CommandProps)
+    (using context: ActorContext[Command]): Behavior[Command]
 
-  def doNext(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command]
+  def doNext(systemPrompt: Option[String], commandProps: CommandProps)
+    (using context: ActorContext[Command]): Behavior[Command]
 
-  def doReview(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command]
+  def doReview(systemPrompt: Option[String], commandProps: CommandProps)
+    (using context: ActorContext[Command]): Behavior[Command]
 
-  def doEnd(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command]
+  def doEnd(systemPrompt: Option[String], commandProps: CommandProps)
+    (using context: ActorContext[Command]): Behavior[Command]
 
-  def doCallTool(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command]
+  def doCallTool(systemPrompt: Option[String], commandProps: CommandProps)
+    (using context: ActorContext[Command]): Behavior[Command]
 end Agent
 
 object Agent:
@@ -72,7 +77,8 @@ object Agent:
   end getSystemPrompts
 
   @tailrec
-  private[agents] def makeRequestWithRetries[T](request: Request[T], retries: Int = 3)(using context: ActorContext[Command]): Option[T] =
+  private[agents] def makeRequestWithRetries[T](request: Request[T], retries: Int = 3)
+    (using context: ActorContext[Command]): Option[T] =
     if retries == 0 then
       None
     else
@@ -111,6 +117,17 @@ object Agent:
           .get[String]("text").toOption
     response
   end askLlm
+
+  private[agents] def promptToTemplate(
+    wholePrompt: Option[String] = None, systemPrompt: Option[String] = None, userInput: Option[String] = None
+  ): String =
+    (wholePrompt, systemPrompt, userInput) match
+      case (Some(prompt), _, _) => s"<Prompt>${prompt.trim}</Prompt>"
+      case (_, Some(prompt), _) => s"<SystemInstructions>${prompt.trim}</SystemInstructions>"
+      case (_, _, Some(prompt)) => s"<UserInput>${prompt.trim}</UserInput>"
+      case _ => ""
+  end promptToTemplate
+
 end Agent
 
 object AgentsBehaviours:
@@ -161,7 +178,9 @@ object AgentsBehaviours:
       case None => Map.empty
   end getAgentsBehaviours
 
-  private[agents] def getAgentBehaviourByCommand(agentsBehaviours: AgentBehaviour, agentId: String, command: Command): Option[String] =
+  private[agents] def getAgentBehaviourByCommand(
+    agentsBehaviours: AgentBehaviour, agentId: String, command: Command
+  ): Option[String] =
     for
       config <- agentsBehaviours.get(agentId)
       prompt <- command match

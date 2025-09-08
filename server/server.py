@@ -52,11 +52,17 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/internal/docs":
-            fp = INTERNAL_DIR / "internal_docs.html"
-            if fp.exists():
-                self._send(200, fp.read_text("utf-8"), "text/html")
-            else:
-                self._send(404, "internal_docs.html does not exist")
+            if not INTERNAL_DIR.exists() or not INTERNAL_DIR.is_dir():
+                self.send_error(404, "internal docs directory not found")
+                return
+
+            files = sorted(INTERNAL_DIR.glob("*.html"))
+            if not files:
+                self._send(404, "no internal docs found")
+                return
+
+            merged = "\n".join(fp.read_text("utf-8") for fp in files)
+            self._send(200, merged, "text/html")
             return
 
         self.send_error(404, "Not Found")
