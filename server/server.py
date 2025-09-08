@@ -3,10 +3,11 @@ from urllib.parse import urlparse, parse_qs, unquote
 from pathlib import Path
 import re
 
-CV_DIR = Path("./DB/EMPLOYEES/CVS")
-ID_DIR = Path("./DB/EMPLOYEES/IDS")
-DOCS_DIR = Path("./DB/EMPLOYEES/DOCS")
-INTERNAL_DIR = Path("./DB/INTERNAL/DOCS")
+BASE_DIR = Path(__file__).resolve().parent
+CV_DIR = BASE_DIR / "DB" / "EMPLOYEES" / "CVS"
+ID_DIR = BASE_DIR / "DB" / "EMPLOYEES" / "IDS"
+DOCS_DIR = BASE_DIR / "DB" / "EMPLOYEES" / "DOCS"
+INTERNAL_DIR = BASE_DIR / "DB" / "INTERNAL" / "DOCS"
 
 class Handler(BaseHTTPRequestHandler):
     def _send(self, code: int, body: str, content_type: str = "text/plain"):
@@ -52,6 +53,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/internal/docs":
+            print(INTERNAL_DIR)
             if not INTERNAL_DIR.exists() or not INTERNAL_DIR.is_dir():
                 self.send_error(404, "internal docs directory not found")
                 return
