@@ -1,6 +1,6 @@
 package alex.demo
 
-import agents.Agent.{Command, CommandProps}
+import agents.Agent.Command
 import agents.OrchestratorAgent
 
 import io.github.cdimascio.dotenv.Dotenv
@@ -8,15 +8,13 @@ import org.apache.pekko.actor.typed.ActorSystem
 
 val dotenv = Dotenv.load()
 
-// todo: 2 workers: 1 to set up bob profile based on employee data
-//  (main/secondary skills, about me, superhero skills, food preferences, hobbies, managed by/manages, recruited by etc.)
-//  1 to sign internal documents
-// todo: 2 services: 1 for getting employee data (real endpoint but mock data),
-//  1 for writing data on the DB (real endpoint but mock data)
-// todo: user may ask for manual review, if not specified assume yes
-
 @main
 def main(): Unit =
   val orchestratorAgent: ActorSystem[Command] = ActorSystem(OrchestratorAgent(), "orchestrator-agent")
-  orchestratorAgent ! Command.Start(props = CommandProps())
+  val userInput = "andrei"
+  orchestratorAgent ! Command.Start()
 end main
+
+private def takeInput(): Option[String] =
+  Some(scala.io.StdIn.readLine().trim).filter(_.nonEmpty)
+end takeInput

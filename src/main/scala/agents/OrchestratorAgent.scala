@@ -7,33 +7,26 @@ import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
 
 object OrchestratorAgent extends Agent:
-  def doStart(context: ActorContext[Command], systemPrompt: Option[String], commandProps: CommandProps): Behavior[Command] =
-    println(systemPrompt)
-    print(askLlm("describe tic tac toe in a few words"))
+  def doStart(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command] =
+    systemPrompt.foreach(context.log.info)
+    val worker = context.spawn(WorkerAgent(), "worker")
+    worker ! Command.CallTool()
     Behaviors.same
   end doStart
 
-  private def takeInput(): Option[String] =
-    Some(scala.io.StdIn.readLine().trim).filter(_.nonEmpty)
-  end takeInput
-
-  def doNext(context: ActorContext[Command], systemPrompt: Option[String], commandProps: CommandProps): Behavior[Command] =
-    println(systemPrompt)
+  def doNext(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command] =
     Behaviors.same
   end doNext
 
-  def doReview(context: ActorContext[Command], systemPrompt: Option[String], commandProps: CommandProps): Behavior[Command] =
-    println(systemPrompt)
+  def doReview(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command] =
     Behaviors.same
   end doReview
 
-  def doEnd(context: ActorContext[Command], systemPrompt: Option[String], commandProps: CommandProps): Behavior[Command] =
-    println(systemPrompt)
+  def doEnd(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command] =
     Behaviors.same
   end doEnd
 
-  def doCallTool(context: ActorContext[Command], systemPrompt: Option[String], commandProps: CommandProps): Behavior[Command] =
-    println(systemPrompt)
+  def doCallTool(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command] =
     Behaviors.same
   end doCallTool
 

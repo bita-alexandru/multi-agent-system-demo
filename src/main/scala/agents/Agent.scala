@@ -18,41 +18,43 @@ import scala.util.Try
 trait Agent:
   def apply(): Behavior[Command] =
     Behaviors.setup: context =>
+      given ActorContext[Command] = context
+
       Behaviors.receiveMessage:
         case Command.Start(props) =>
-          doStart(context, getSystemPrompts(context, Command.Start(props)), props)
+          doStart(getSystemPrompts(Command.Start(props)), props)
         case Command.Next(props) =>
-          doNext(context, getSystemPrompts(context, Command.Next(props)), props)
+          doNext(getSystemPrompts(Command.Next(props)), props)
         case Command.Review(props) =>
-          doReview(context, getSystemPrompts(context, Command.Review(props)), props)
+          doReview(getSystemPrompts(Command.Review(props)), props)
         case Command.End(props) =>
-          doEnd(context, getSystemPrompts(context, Command.End(props)), props)
+          doEnd(getSystemPrompts(Command.End(props)), props)
         case Command.CallTool(props) =>
-          doCallTool(context, getSystemPrompts(context, Command.CallTool(props)), props)
+          doCallTool(getSystemPrompts(Command.CallTool(props)), props)
         case null => Behaviors.same
   end apply
 
-  def doStart(context: ActorContext[Command], systemPrompt: Option[String], commandProps: CommandProps): Behavior[Command]
+  def doStart(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command]
 
-  def doNext(context: ActorContext[Command], systemPrompt: Option[String], commandProps: CommandProps): Behavior[Command]
+  def doNext(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command]
 
-  def doReview(context: ActorContext[Command], systemPrompt: Option[String], commandProps: CommandProps): Behavior[Command]
+  def doReview(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command]
 
-  def doEnd(context: ActorContext[Command], systemPrompt: Option[String], commandProps: CommandProps): Behavior[Command]
+  def doEnd(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command]
 
-  def doCallTool(context: ActorContext[Command], systemPrompt: Option[String], commandProps: CommandProps): Behavior[Command]
+  def doCallTool(systemPrompt: Option[String], commandProps: CommandProps)(using context: ActorContext[Command]): Behavior[Command]
 end Agent
 
 object Agent:
   private val geminiApiKey: String = dotenv.get("GEMINI_API_KEY")
   private val geminiBaseUrl: String = dotenv.get("GEMINI_BASE_URL")
 
-  enum Command(val commandProps: CommandProps):
-    case Start(props: CommandProps) extends Command(props)
-    case Next(props: CommandProps) extends Command(props)
-    case Review(props: CommandProps) extends Command(props)
-    case End(props: CommandProps) extends Command(props)
-    case CallTool(props: CommandProps) extends Command(props)
+  enum Command(val commandProps: CommandProps = CommandProps()):
+    case Start(props: CommandProps = CommandProps()) extends Command(props)
+    case Next(props: CommandProps = CommandProps()) extends Command(props)
+    case Review(props: CommandProps = CommandProps()) extends Command(props)
+    case End(props: CommandProps = CommandProps()) extends Command(props)
+    case CallTool(props: CommandProps = CommandProps()) extends Command(props)
 
   sealed case class CommandProps(
     prompt: Option[String] = None,
@@ -60,20 +62,22 @@ object Agent:
     contacts: Option[List[ActorRef[Agent]]] = None
   )
 
-  private def getSystemPrompts(context: ActorContext[Command], command: Command): Option[String] =
-    AgentConfigs.getAgentConfigByCommand(
-      agentConfigs = AgentConfigs.agentConfigs,
+  private def getSystemPrompts(command: Command)(using context: ActorContext[Command]): Option[String] =
+    context.log.info("getSystemPrompts")
+    AgentsBehaviours.getAgentBehaviourByCommand(
+      agentsBehaviours = AgentsBehaviours.agentsBehaviours,
       agentId = context.system.name,
       command = command
     )
   end getSystemPrompts
 
   @tailrec
-  private[agents] def makeRequestWithRetries[T](request: Request[T], retries: Int = 3): Option[T] =
+  private[agents] def makeRequestWithRetries[T](request: Request[T], retries: Int = 3)(using context: ActorContext[Command]): Option[T] =
     if retries == 0 then
       None
     else
       val response = request.send()
+      context.log.info("makeRequestWithRetries-response")
       if response.code.isSuccess then
         Some(response.body)
       else
@@ -81,7 +85,7 @@ object Agent:
     end if
   end makeRequestWithRetries
 
-  private[agents] def askLlm(prompt: String): Option[String] =
+  private[agents] def askLlm(prompt: String)(using context: ActorContext[Command]): Option[String] =
     val requestBody =
       Json.obj:
         "contents" -> Json.arr:
@@ -97,6 +101,7 @@ object Agent:
       .body(requestBody.noSpaces)
 
     val maybeResponse = makeRequestWithRetries(request)
+    context.log.info("askLlm-maybeResponse")
     val response = maybeResponse.flatMap: response =>
       parse(response).toOption.flatMap:
         _.hcursor
@@ -108,16 +113,16 @@ object Agent:
   end askLlm
 end Agent
 
-object AgentConfigs:
-  private given Decoder[SystemPrompts] = Decoder.forProduct5(
+object AgentsBehaviours:
+  private given Decoder[AgentInstructions] = Decoder.forProduct5(
     "start",
     "next",
     "review",
     "end",
     "call-tool"
-  )(SystemPrompts.apply)
+  )(AgentInstructions.apply)
 
-  private[agents] sealed case class SystemPrompts(
+  private[agents] sealed case class AgentInstructions(
     start: String,
     next: String,
     review: String,
@@ -125,40 +130,40 @@ object AgentConfigs:
     callTools: String
   )
 
-  private type AgentConfig = Map[String, SystemPrompts]
+  private type AgentBehaviour = Map[String, AgentInstructions]
 
-  private val systemPromptsPath: String = "src/main/resources/system-prompts.yml"
+  private val agentsBehavioursPath: String = "src/main/resources/agents/behaviours.yml"
 
-  private[agents] val agentConfigs: AgentConfig = getAgentConfigs
+  private[agents] val agentsBehaviours: AgentBehaviour = getAgentsBehaviours
 
   private def processJson(
     json: Either[ParsingFailure, Json]
-  ): Either[Error, AgentConfig] =
+  ): Either[Error, AgentBehaviour] =
     json
       .leftMap(err => err: Error)
-      .flatMap(_.as[AgentConfig])
+      .flatMap(_.as[AgentBehaviour])
   end processJson
 
-  private def readConfigs: Option[List[Either[Error, AgentConfig]]] =
-    Try(new FileReader(systemPromptsPath))
+  private def readAgentsBehaviours: Option[List[Either[Error, AgentBehaviour]]] =
+    Try(new FileReader(agentsBehavioursPath))
       .toEither
       .map(fileReader => yaml.parser.parseDocuments(fileReader).toList)
       .map(_.map(processJson)) match
       case Left(err) => None
       case Right(configs) =>
         Some(configs)
-  end readConfigs
+  end readAgentsBehaviours
 
-  private def getAgentConfigs: AgentConfig =
-    readConfigs match
+  private def getAgentsBehaviours: AgentBehaviour =
+    readAgentsBehaviours match
       case Some(configs) =>
-        configs.collect { case Right(cfg) => cfg }.foldLeft(Map.empty[String, SystemPrompts])(_ ++ _)
+        configs.collect { case Right(cfg) => cfg }.foldLeft(Map.empty[String, AgentInstructions])(_ ++ _)
       case None => Map.empty
-  end getAgentConfigs
+  end getAgentsBehaviours
 
-  private[agents] def getAgentConfigByCommand(agentConfigs: AgentConfig, agentId: String, command: Command): Option[String] =
+  private[agents] def getAgentBehaviourByCommand(agentsBehaviours: AgentBehaviour, agentId: String, command: Command): Option[String] =
     for
-      config <- agentConfigs.get(agentId)
+      config <- agentsBehaviours.get(agentId)
       prompt <- command match
         case Command.Start(_) => Some(config.start)
         case Command.Next(_) => Some(config.next)
@@ -166,6 +171,6 @@ object AgentConfigs:
         case Command.End(_) => Some(config.end)
         case Command.CallTool(_) => Some(config.callTools)
     yield prompt
-  end getAgentConfigByCommand
+  end getAgentBehaviourByCommand
 
-end AgentConfigs
+end AgentsBehaviours
