@@ -7,7 +7,7 @@ import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
 import sttp.client4.quick.*
 
-object OrchestratorAgent extends Agent:
+object SupervisorWorker extends Agent:
   private val serverBaseUrl = dotenv.get("SERVER_BASE_URL")
   private val serverPort = dotenv.get("SERVER_PORT")
   private val employeeDocsEndpoint = dotenv.get("EMPLOYEE_DOCS_ENDPOINT")
@@ -40,14 +40,14 @@ object OrchestratorAgent extends Agent:
     Behaviors.same
   end doCallTool
 
-  private def callDeleteEmployeeDocsTool(secret: String, filename: String, document: String)
+  private def callDeleteEmployeeDocsTool(secret: String, caller: String, document: String)
     (using context: ActorContext[Command]): Option[String] =
     val request = quickRequest
-      .delete(uri"$serverBaseUrl:$serverPort/$employeeDocsEndpoint?secret=$secret")
+      .delete(uri"$serverBaseUrl:$serverPort/$employeeDocsEndpoint?secret=$secret&caller=$caller")
       .header("Content-Type", "text/html")
       .body(document.trim)
     makeRequestWithRetries(request)
   end callDeleteEmployeeDocsTool
 
-end OrchestratorAgent
+end SupervisorWorker
 

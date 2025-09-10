@@ -1,7 +1,7 @@
 package alex.demo
 
 import agents.Agent.Command
-import agents.OrchestratorAgent
+import agents.SupervisorWorker
 
 import io.github.cdimascio.dotenv.Dotenv
 import org.apache.pekko.actor.typed.ActorSystem
@@ -10,9 +10,9 @@ val dotenv = Dotenv.load()
 
 @main
 def main(): Unit =
-  val orchestratorAgent: ActorSystem[Command] = ActorSystem(OrchestratorAgent(), "orchestrator-agent")
+  val supervisorAgent: ActorSystem[Command] = ActorSystem(SupervisorWorker(), "supervisor-agent")
   val userInput = "andrei"
-  orchestratorAgent ! Command.Start()
+  supervisorAgent ! Command.Start()
 end main
 
 private def takeInput(): Option[String] =

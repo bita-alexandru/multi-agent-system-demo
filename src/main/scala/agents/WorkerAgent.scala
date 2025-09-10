@@ -43,41 +43,43 @@ object WorkerAgent extends Agent:
     Behaviors.same
   end doCallTool
 
-  private def callGetEmployeeCvTool(secret: String)(using context: ActorContext[Command]): Option[String] =
+  private def callGetEmployeeCvTool(secret: String, caller: String)
+    (using context: ActorContext[Command]): Option[String] =
     val request = quickRequest
-      .get(uri"$serverBaseUrl:$serverPort/$employeeCvEndpoint?secret=$secret")
+      .get(uri"$serverBaseUrl:$serverPort/$employeeCvEndpoint?secret=$secret&caller=$caller")
       .header("Content-Type", "text/html")
     makeRequestWithRetries(request)
   end callGetEmployeeCvTool
 
-  private def callGetEmployeeIdTool(secret: String)(using context: ActorContext[Command]): Option[String] =
+  private def callGetEmployeeIdTool(secret: String, caller: String)
+    (using context: ActorContext[Command]): Option[String] =
     val request = quickRequest
-      .get(uri"$serverBaseUrl:$serverPort/$employeeIdEndpoint?secret=$secret")
+      .get(uri"$serverBaseUrl:$serverPort/$employeeIdEndpoint?secret=$secret&caller=$caller")
       .header("Content-Type", "text/html")
     makeRequestWithRetries(request)
   end callGetEmployeeIdTool
 
-  private def callPostEmployeeProfileTool(secret: String, profile: String)
+  private def callPostEmployeeProfileTool(secret: String, caller: String, profile: String)
     (using context: ActorContext[Command]): Option[String] =
     val request = quickRequest
-      .post(uri"$serverBaseUrl:$serverPort/$employeeProfileEndpoint?secret=$secret")
+      .post(uri"$serverBaseUrl:$serverPort/$employeeProfileEndpoint?secret=$secret&caller=$caller")
       .header("Content-Type", "text/html")
       .body(profile.trim)
     makeRequestWithRetries(request)
   end callPostEmployeeProfileTool
 
-  private def callPostEmployeeDocsTool(secret: String, filename: String, document: String)
+  private def callPostEmployeeDocsTool(secret: String, caller: String, document: String)
     (using context: ActorContext[Command]): Option[String] =
     val request = quickRequest
-      .post(uri"$serverBaseUrl:$serverPort/$employeeDocsEndpoint?secret=$secret")
+      .post(uri"$serverBaseUrl:$serverPort/$employeeDocsEndpoint?secret=$secret&caller=$caller")
       .header("Content-Type", "text/html")
       .body(document.trim)
     makeRequestWithRetries(request)
   end callPostEmployeeDocsTool
 
-  private def callGetInternalDocsTool(using context: ActorContext[Command]): List[Option[String]] =
+  private def callGetInternalDocsTool(caller: String)(using context: ActorContext[Command]): List[Option[String]] =
     val request = quickRequest
-      .get(uri"$serverBaseUrl:$serverPort/$internalDocsEndpoint")
+      .get(uri"$serverBaseUrl:$serverPort/$internalDocsEndpoint?caller=$caller")
       .header("Content-Type", "text/html")
     makeRequestWithRetries(request).map: docs =>
       docs

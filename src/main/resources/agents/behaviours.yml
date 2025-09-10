@@ -1,4 +1,4 @@
-orchestrator-agent:
+supervisor-agent:
   start: >
     start prompt
   next: >
