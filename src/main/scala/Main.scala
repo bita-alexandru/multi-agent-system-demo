@@ -1,6 +1,6 @@
 package alex.demo
 
-import agents.Agent.Command
+import agents.Agent.{Command, CommandProps}
 import agents.SupervisorWorker
 
 import io.github.cdimascio.dotenv.Dotenv
@@ -12,7 +12,7 @@ val dotenv = Dotenv.load()
 def main(): Unit =
   val supervisorAgent: ActorSystem[Command] = ActorSystem(SupervisorWorker(), "supervisor-agent")
   val userInput = "andrei"
-  supervisorAgent ! Command.Start()
+  supervisorAgent ! Command.Start(props = CommandProps(input = Some(userInput)))
 end main
 
 private def takeInput(): Option[String] =

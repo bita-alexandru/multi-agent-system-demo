@@ -18,7 +18,7 @@ object WorkerAgent extends Agent:
 
   def doStart(systemPrompt: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command] =
-    systemPrompt.foreach(context.log.info)
+    context.log.info(commandProps.prompt.getOrElse("doStart"))
     Behaviors.same
   end doStart
 
@@ -29,6 +29,7 @@ object WorkerAgent extends Agent:
 
   def doReview(systemPrompt: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command] =
+    systemPrompt.foreach(context.log.info)
     Behaviors.same
   end doReview
 
