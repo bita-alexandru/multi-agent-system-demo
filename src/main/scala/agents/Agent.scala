@@ -54,9 +54,13 @@ object Agent:
   private val geminiApiKey: String = dotenv.get("GEMINI_API_KEY")
   private val geminiBaseUrl: String = dotenv.get("GEMINI_BASE_URL")
 
-  enum Label(label: String):
+  enum Label(val value: String):
+    case User extends Label("user")
     case Supervisor extends Label("supervisor-agent")
     case Worker extends Label("worker-agent")
+    case Unknown extends Label("unknown")
+    case ProfileWorker extends Label("profileWorker")
+    case DocsWorker extends Label("docsWorker")
   end Label
 
   enum Command(val commandProps: CommandProps = CommandProps()):
@@ -74,30 +78,29 @@ object Agent:
   )
 
   private def getSystemPrompts(command: Command)(using context: ActorContext[Command]): Option[String] =
-    context.log.info("getSystemPrompts")
     AgentsBehaviours.getbehaviourByCommand(
-      agentsBehaviours = AgentsBehaviours.behaviours,
-      agentLabel = getAgentLabelFromName(context.system.name),
+      behaviours = AgentsBehaviours.behaviours,
+      agentLabel = getAgentLabelFromName(context.self.path.name),
       command = command
     )
   end getSystemPrompts
 
   private def getAgentLabelFromName(name: String): String =
     name match
-      case "supervisor-agent" => "supervisor-agent"
+      case Label.User.value => Label.Supervisor.value
       // @formatter:off
-      case s"worker-agent-$id" => "worker-agent"
+      case s"${Label.Worker.value}-$id" => Label.Worker.value
       // @formatter:on
-      case _ => "worker-agent"
+      case _ => Label.Worker.value
   end getAgentLabelFromName
 
   private[agents] def getAgentIdFromName(name: String): String =
     name match
-      case "supervisor-agent" => "supervisor"
+      case Label.User.value => "supervisor"
       // @formatter:off
-      case s"worker-agent-$id" => id
+      case s"${Label.Worker.value}-$id" => id
       // @formatter:on
-      case _ => "unknown"
+      case _ => Label.Unknown.value
   end getAgentIdFromName
 
   @tailrec
@@ -211,10 +214,10 @@ object AgentsBehaviours:
   end getBehaviours
 
   private[agents] def getbehaviourByCommand(
-    agentsBehaviours: Behaviour, agentLabel: String, command: Command
+    behaviours: Behaviour, agentLabel: String, command: Command
   ): Option[String] =
     for
-      config <- agentsBehaviours.get(agentLabel)
+      config <- behaviours.get(agentLabel)
       prompt <- command match
         case Command.Start(_) => Some(config.start)
         case Command.Next(_) => Some(config.next)

@@ -1,7 +1,7 @@
 package alex.demo
 package agents
 
-import agents.Agent.{Command, CommandProps, askLlm, getContentFromJsonField, makeRequestWithRetries, standardizePrompt}
+import agents.Agent.{Command, CommandProps, Label, askLlm, getContentFromJsonField, makeRequestWithRetries, standardizePrompt}
 
 import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
@@ -19,23 +19,24 @@ object SupervisorWorker extends Agent:
     //    val response = """{"profileWorker": "abc", "docsWorker": "123"}"""
     askLlm(prompt) match
       case None =>
-        context.log.info("smth bad happened rip")
+        context.log.info("supervisorAgent doStart askLlm FAILED")
         Behaviors.same
       case Some(response) =>
         context.log.info(response)
         val thoughts = getContentFromJsonField(response, "thoughts")
         // log thoughts
-        val profileWorker = context.spawn(WorkerAgent(), "worker-agent-peter")
-        val profileWorkerInstructions = getContentFromJsonField(response, "profileWorker")
+        val profileWorker = context.spawn(WorkerAgent(), s"${Label.Worker.value}-peter")
+        val profileWorkerInstructions = getContentFromJsonField(response, Label.ProfileWorker.value)
         profileWorker ! Command.Start(
-          props = CommandProps(prompt = Some(profileWorkerInstructions), input = commandProps.input, from = Some(context.self))
+          props = CommandProps(input = Some(profileWorkerInstructions), from = Some(context.self))
         )
-        val docsWorker = context.spawn(WorkerAgent(), "worker-agent-daisy")
-        val docsWorkerInstructions = getContentFromJsonField(response, "docsWorker")
+        val docsWorker = context.spawn(WorkerAgent(), s"${Label.Worker.value}-daisy")
+        val docsWorkerInstructions = getContentFromJsonField(response, Label.DocsWorker.value)
         docsWorker ! Command.Start(
-          props = CommandProps(prompt = Some(docsWorkerInstructions), input = commandProps.input, from = Some(context.self))
+          props = CommandProps(input = Some(docsWorkerInstructions), from = Some(context.self))
         )
         Behaviors.same
+    end match
   end doStart
 
   def doNext(systemPrompt: Option[String], commandProps: CommandProps)

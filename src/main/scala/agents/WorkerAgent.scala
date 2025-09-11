@@ -1,7 +1,7 @@
 package alex.demo
 package agents
 
-import agents.Agent.{Command, CommandProps, makeRequestWithRetries}
+import agents.Agent.{Command, CommandProps, Label, askLlm, getContentFromJsonField, makeRequestWithRetries, standardizePrompt}
 
 import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
@@ -18,12 +18,24 @@ object WorkerAgent extends Agent:
 
   def doStart(systemPrompt: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command] =
-    context.log.info(commandProps.prompt.getOrElse("doStart"))
-    Behaviors.same
+    val prompt = standardizePrompt(systemPrompt, commandProps.input)
+    context.log.info(prompt)
+    askLlm(prompt) match
+      case None =>
+        context.log.info("workerAgent doStart askLlm FAILED")
+        Behaviors.same
+      case Some(response) =>
+        context.log.info(response)
+        val thoughts = getContentFromJsonField(response, "thoughts")
+        // log thoughts
+        val role = getContentFromJsonField(response, "role")
+        context.self ! Command.Next(props = CommandProps(prompt = commandProps.input, input = Some(role), from = commandProps.from))
+        Behaviors.same
   end doStart
 
   def doNext(systemPrompt: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command] =
+    context.log.info(systemPrompt.getOrElse("WorkerAgent doNext"))
     Behaviors.same
   end doNext
 
