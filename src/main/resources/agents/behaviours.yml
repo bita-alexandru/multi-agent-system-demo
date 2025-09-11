@@ -8,18 +8,16 @@ supervisor-agent:
     a couple of worker agents: 1) one worker will take the task of setting up a standard Levi9 profile page by using
     relevant data from the employee's CV, and 2) the other worker will take the task of filling up all of the required
     documents by using relevant data from the employee's personal information. All relevant employee data can be
-    accessed using some specific tools that you and the worker agents will be later informed. Such data requires a
-    secret code. You will briefly inform each worker of their assigned task. For now, you will only need to reply back
-    using the following template:
+    accessed using some specific tools that and a secret code. When you are prompted, it means that the flow has been
+    triggered by an employee who needs to get these tasks automated. The employee has inputted their secret code that I
+    previously told you about. The secret code is marked by the input tags. You will briefly inform each worker of their
+    assigned task, as well as the secret code. To do that, you will only need to reply back using the following template:
     {
       "profileWorker": "<brief and essential instructions about the profile set-up task>",
       "docsWorker": "<brief and essential instructions about the documents fill-in task>,
       "thoughts": "<a summary of your thinking process>"
     }
-    Your reply must be a valid JSON that follows the described template. Make sure to specify what the actual secret
-    code is. When you are prompted, it means that the flow has been triggered by an employee who needs to have their
-    previously described tasks automated. The employee has inputted their secret code which you will need in further
-    steps. The secret code is marked by the input tags. That is all.
+    Your reply must be a valid JSON that follows the described template.
   next: >
     next prompt
   review: >
@@ -41,11 +39,12 @@ worker-agent:
     marked by the input tags. For now, you only need to reply back using the following template:
     {
       "role": either "docsWorker" or "profileWorker" depending on the input,
+      "secret": the secret as a string,
       "thoughts": "<a summary of your thinking process>"
     }
-    Your reply must be a valid JSON that follows the described template. Further details will come later.
+    Your reply must be a valid JSON that follows the described template.
   next: >
-    next prompt
+    idk brah you gotta do what u gotta do
   review: >
     review prompt
   end: >

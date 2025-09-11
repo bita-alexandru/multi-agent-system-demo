@@ -10,7 +10,7 @@ import sttp.client4.quick.*
 object SupervisorWorker extends Agent {
   private val serverBaseUrl = dotenv.get("SERVER_BASE_URL")
   private val serverPort = dotenv.get("SERVER_PORT")
-  private val employeeDocsEndpoint = dotenv.get("EMPLOYEE_DOCS_ENDPOINT")
+  private val employeeDocsEndpoint = dotenv.get("EMPLOYEE_DOCS_ENDPOINT").split("/")
 
   def doStart(systemPrompt: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command] = {
@@ -58,7 +58,7 @@ object SupervisorWorker extends Agent {
   private def callDeleteEmployeeDocsTool(secret: String, caller: String, document: String)
     (using context: ActorContext[Command]): Option[String] = {
     val request = quickRequest
-      .delete(uri"$serverBaseUrl:$serverPort/$employeeDocsEndpoint?secret=$secret&caller=$caller")
+      .delete(uri"$serverBaseUrl:$serverPort/${employeeDocsEndpoint(0)}/${employeeDocsEndpoint(1)}?secret=$secret&caller=$caller")
       .header("Content-Type", "text/html")
       .body(document.trim)
     makeRequestWithRetries(request)

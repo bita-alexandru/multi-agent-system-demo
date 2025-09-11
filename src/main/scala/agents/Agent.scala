@@ -55,6 +55,8 @@ object Agent {
   private val geminiApiKey: String = dotenv.get("GEMINI_API_KEY")
   private val geminiBaseUrl: String = dotenv.get("GEMINI_BASE_URL")
 
+  private[agents] val err: (trace: String) => String = trace => s"Something went wrong: $trace"
+
   enum Label(val value: String) {
     case User extends Label("user")
     case Supervisor extends Label("supervisor-agent")
@@ -159,7 +161,7 @@ object Agent {
        |""".stripMargin
 
   private[agents] def getContentFromJsonField(json: String, field: String): String = {
-    val cleaned = json.stripPrefix("```json").stripPrefix("```").stripSuffix("```").trim
+    val cleaned = json.replaceAll("(?s)```(?:json)?", "").trim
     parse(cleaned).toOption
       .flatMap(_.hcursor.get[String](field).toOption)
       .getOrElse("")
