@@ -1,13 +1,13 @@
 package alex.demo
 package agents
 
-import agents.Agent.{Command, CommandProps, Label, askLlm, getContentFromJsonField, makeRequestWithRetries, standardizePrompt}
+import agents.Agent.{Command, CommandProps, askLlm, getContentFromJsonField, makeRequestWithRetries, standardizePrompt}
 
 import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
 import sttp.client4.quick.*
 
-object WorkerAgent extends Agent:
+object WorkerAgent extends Agent {
   private val serverBaseUrl = dotenv.get("SERVER_BASE_URL")
   private val serverPort = dotenv.get("SERVER_PORT")
   private val employeeCvEndpoint = dotenv.get("EMPLOYEE_CV_ENDPOINT")
@@ -17,10 +17,10 @@ object WorkerAgent extends Agent:
   private val internalDocsEndpoint = dotenv.get("INTERNAL_DOCS_ENDPOINT")
 
   def doStart(systemPrompt: Option[String], commandProps: CommandProps)
-    (using context: ActorContext[Command]): Behavior[Command] =
+    (using context: ActorContext[Command]): Behavior[Command] = {
     val prompt = standardizePrompt(systemPrompt, commandProps.input)
     context.log.info(prompt)
-    askLlm(prompt) match
+    askLlm(prompt) match {
       case None =>
         context.log.info("workerAgent doStart askLlm FAILED")
         Behaviors.same
@@ -31,76 +31,77 @@ object WorkerAgent extends Agent:
         val role = getContentFromJsonField(response, "role")
         context.self ! Command.Next(props = CommandProps(prompt = commandProps.input, input = Some(role), from = commandProps.from))
         Behaviors.same
-  end doStart
+    }
+  }
 
   def doNext(systemPrompt: Option[String], commandProps: CommandProps)
-    (using context: ActorContext[Command]): Behavior[Command] =
+    (using context: ActorContext[Command]): Behavior[Command] = {
     context.log.info(systemPrompt.getOrElse("WorkerAgent doNext"))
     Behaviors.same
-  end doNext
+  }
 
   def doReview(systemPrompt: Option[String], commandProps: CommandProps)
-    (using context: ActorContext[Command]): Behavior[Command] =
+    (using context: ActorContext[Command]): Behavior[Command] = {
     systemPrompt.foreach(context.log.info)
     Behaviors.same
-  end doReview
+  }
 
   def doEnd(systemPrompt: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command] =
     Behaviors.same
-  end doEnd
 
   def doCallTool(systemPrompt: Option[String], commandProps: CommandProps)
-    (using context: ActorContext[Command]): Behavior[Command] =
+    (using context: ActorContext[Command]): Behavior[Command] = {
     systemPrompt.foreach(context.log.info)
     Behaviors.same
-  end doCallTool
+  }
 
   private def callGetEmployeeCvTool(secret: String, caller: String)
-    (using context: ActorContext[Command]): Option[String] =
+    (using context: ActorContext[Command]): Option[String] = {
     val request = quickRequest
       .get(uri"$serverBaseUrl:$serverPort/$employeeCvEndpoint?secret=$secret&caller=$caller")
       .header("Content-Type", "text/html")
     makeRequestWithRetries(request)
-  end callGetEmployeeCvTool
+  }
 
   private def callGetEmployeeIdTool(secret: String, caller: String)
-    (using context: ActorContext[Command]): Option[String] =
+    (using context: ActorContext[Command]): Option[String] = {
     val request = quickRequest
       .get(uri"$serverBaseUrl:$serverPort/$employeeIdEndpoint?secret=$secret&caller=$caller")
       .header("Content-Type", "text/html")
     makeRequestWithRetries(request)
-  end callGetEmployeeIdTool
+  }
 
   private def callPostEmployeeProfileTool(secret: String, caller: String, profile: String)
-    (using context: ActorContext[Command]): Option[String] =
+    (using context: ActorContext[Command]): Option[String] = {
     val request = quickRequest
       .post(uri"$serverBaseUrl:$serverPort/$employeeProfileEndpoint?secret=$secret&caller=$caller")
       .header("Content-Type", "text/html")
       .body(profile.trim)
     makeRequestWithRetries(request)
-  end callPostEmployeeProfileTool
+  }
 
   private def callPostEmployeeDocsTool(secret: String, caller: String, document: String)
-    (using context: ActorContext[Command]): Option[String] =
+    (using context: ActorContext[Command]): Option[String] = {
     val request = quickRequest
       .post(uri"$serverBaseUrl:$serverPort/$employeeDocsEndpoint?secret=$secret&caller=$caller")
       .header("Content-Type", "text/html")
       .body(document.trim)
     makeRequestWithRetries(request)
-  end callPostEmployeeDocsTool
+  }
 
-  private def callGetInternalDocsTool(caller: String)(using context: ActorContext[Command]): List[Option[String]] =
+  private def callGetInternalDocsTool(caller: String)(using context: ActorContext[Command]): List[Option[String]] = {
     val request = quickRequest
       .get(uri"$serverBaseUrl:$serverPort/$internalDocsEndpoint?caller=$caller")
       .header("Content-Type", "text/html")
-    makeRequestWithRetries(request).map: docs =>
-      docs
-        .split("(?i)(?=<!DOCTYPE html>)")
-        .toList
-        .filter(_.nonEmpty)
-        .map(Some(_))
-    .getOrElse(Nil)
-  end callGetInternalDocsTool
+    makeRequestWithRetries(request).map { docs =>
+        docs
+          .split("(?i)(?=<!DOCTYPE html>)")
+          .toList
+          .filter(_.nonEmpty)
+          .map(Some(_))
+      }
+      .getOrElse(Nil)
+  }
 
-end WorkerAgent
+}

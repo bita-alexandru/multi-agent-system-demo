@@ -7,17 +7,17 @@ import org.apache.pekko.actor.typed.Behavior
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
 import sttp.client4.quick.*
 
-object SupervisorWorker extends Agent:
+object SupervisorWorker extends Agent {
   private val serverBaseUrl = dotenv.get("SERVER_BASE_URL")
   private val serverPort = dotenv.get("SERVER_PORT")
   private val employeeDocsEndpoint = dotenv.get("EMPLOYEE_DOCS_ENDPOINT")
 
   def doStart(systemPrompt: Option[String], commandProps: CommandProps)
-    (using context: ActorContext[Command]): Behavior[Command] =
+    (using context: ActorContext[Command]): Behavior[Command] = {
     val prompt = standardizePrompt(systemPrompt, commandProps.input)
     context.log.info(prompt)
     //    val response = """{"profileWorker": "abc", "docsWorker": "123"}"""
-    askLlm(prompt) match
+    askLlm(prompt) match {
       case None =>
         context.log.info("supervisorAgent doStart askLlm FAILED")
         Behaviors.same
@@ -36,37 +36,31 @@ object SupervisorWorker extends Agent:
           props = CommandProps(input = Some(docsWorkerInstructions), from = Some(context.self))
         )
         Behaviors.same
-    end match
-  end doStart
+    }
+  }
 
   def doNext(systemPrompt: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command] =
     Behaviors.same
-  end doNext
 
   def doReview(systemPrompt: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command] =
     Behaviors.same
-  end doReview
 
   def doEnd(systemPrompt: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command] =
     Behaviors.same
-  end doEnd
 
   def doCallTool(systemPrompt: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command] =
     Behaviors.same
-  end doCallTool
 
   private def callDeleteEmployeeDocsTool(secret: String, caller: String, document: String)
-    (using context: ActorContext[Command]): Option[String] =
+    (using context: ActorContext[Command]): Option[String] = {
     val request = quickRequest
       .delete(uri"$serverBaseUrl:$serverPort/$employeeDocsEndpoint?secret=$secret&caller=$caller")
       .header("Content-Type", "text/html")
       .body(document.trim)
     makeRequestWithRetries(request)
-  end callDeleteEmployeeDocsTool
-
-end SupervisorWorker
-
+  }
+}
