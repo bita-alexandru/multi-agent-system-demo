@@ -157,10 +157,9 @@ object Agent:
 
   private[agents] def getContentFromJsonField(json: String, field: String): String =
     val cleaned = json.stripPrefix("```json").stripPrefix("```").stripSuffix("```").trim
-    parse(cleaned).toOption.flatMap:
-      _.hcursor
-        .get[String](field).toOption
-    .getOrElse("")
+    parse(cleaned).toOption
+      .flatMap(_.hcursor.get[String](field).toOption)
+      .getOrElse("")
   end getContentFromJsonField
 
 end Agent
