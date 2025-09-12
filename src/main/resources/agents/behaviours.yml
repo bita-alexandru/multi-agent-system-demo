@@ -59,6 +59,7 @@ worker-agent:
     {
       "role": either "docsWorker" or "profileWorker" depending on the received input,
       "secret": the secret as a string,
+      "userFeedback": the user's special requirements if any as a string or else an empty string,
       "thoughts": "<a summary of your thinking process>"
     }
     Your reply must be a valid JSON that follows the described template.
@@ -67,8 +68,8 @@ worker-agent:
     here at Levi9. Currently, for new Levi9 employees, there are two on-boarding tasks that need automated:
     1) setting up a standard Levi9 profile page, and 2) filling in a bunch of internal company basic acknowledgements.
     You being prompted right now means you've already been assigned to work on such a task. The task in question is
-    briefly described in the first input. The necessary data has also been passed to you after the first input.
-    Additional guidance is as follows:
+    briefly described in the first input. The necessary data has also been passed to you after the first input. Make
+    sure to also pay attention to any user special requirements if present. Additional guidance is as follows:
     1. If you are to work on setting up a Levi9 profile page for the new employee, you must generate a simple but neat
     HTML page that covers the following topics: about me, name, job title, email, phone number, accumulated tenure (in
     Levi9), main skills, secondary skills, superpowers & hobbies, food preferences, language skills, birthday, age,
