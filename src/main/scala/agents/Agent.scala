@@ -1,7 +1,7 @@
 package alex.demo
 package agents
 
-import agents.Agent.{Command, CommandProps, getSystemPrompts}
+import agents.Agent.{Command, CommandProps, getSystemInstructions}
 
 import io.circe.*
 import io.circe.parser.*
@@ -22,32 +22,32 @@ trait Agent {
 
       Behaviors.receiveMessage {
         case Command.Start(props) =>
-          doStart(getSystemPrompts(Command.Start(props)), props)
+          doStart(getSystemInstructions(Command.Start(props)), props)
         case Command.Next(props) =>
-          doNext(getSystemPrompts(Command.Next(props)), props)
+          doNext(getSystemInstructions(Command.Next(props)), props)
         case Command.Review(props) =>
-          doReview(getSystemPrompts(Command.Review(props)), props)
+          doReview(getSystemInstructions(Command.Review(props)), props)
         case Command.End(props) =>
-          doEnd(getSystemPrompts(Command.End(props)), props)
+          doEnd(getSystemInstructions(Command.End(props)), props)
         case Command.CallTool(props) =>
-          doCallTool(getSystemPrompts(Command.CallTool(props)), props)
+          doCallTool(getSystemInstructions(Command.CallTool(props)), props)
         case null => Behaviors.same
       }
     }
 
-  def doStart(systemPrompt: Option[String], commandProps: CommandProps)
+  def doStart(systemInstructions: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command]
 
-  def doNext(systemPrompt: Option[String], commandProps: CommandProps)
+  def doNext(systemInstructions: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command]
 
-  def doReview(systemPrompt: Option[String], commandProps: CommandProps)
+  def doReview(systemInstructions: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command]
 
-  def doEnd(systemPrompt: Option[String], commandProps: CommandProps)
+  def doEnd(systemInstructions: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command]
 
-  def doCallTool(systemPrompt: Option[String], commandProps: CommandProps)
+  def doCallTool(systemInstructions: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command]
 }
 
@@ -57,13 +57,13 @@ object Agent {
 
   private[agents] val err: (trace: String) => String = trace => s"Something went wrong: $trace"
 
-  enum Label(val value: String) {
-    case User extends Label("user")
-    case Supervisor extends Label("supervisor-agent")
-    case Worker extends Label("worker-agent")
-    case Unknown extends Label("unknown")
-    case ProfileWorker extends Label("profileWorker")
-    case DocsWorker extends Label("docsWorker")
+  object Label {
+    val User = "user"
+    val Supervisor = "supervisor-agent"
+    val Worker = "worker-agent"
+    val Unknown = "unknown"
+    val ProfileWorker = "profileWorker"
+    val DocsWorker = "docsWorker"
   }
 
   enum Command(val commandProps: CommandProps = CommandProps()) {
@@ -75,12 +75,12 @@ object Agent {
   }
 
   sealed case class CommandProps(
-    prompt: Option[String] = None,
-    input: Option[String] = None,
+    instructions: List[String] = Nil,
+    input: List[String] = Nil,
     from: Option[ActorRef[Command]] = None
   )
 
-  private def getSystemPrompts(command: Command)(using context: ActorContext[Command]): Option[String] =
+  private def getSystemInstructions(command: Command)(using context: ActorContext[Command]): Option[String] =
     AgentsBehaviours.getbehaviourByCommand(
       behaviours = AgentsBehaviours.behaviours,
       agentLabel = getAgentLabelFromName(context.self.path.name),
@@ -89,35 +89,38 @@ object Agent {
 
   private def getAgentLabelFromName(name: String): String =
     name match {
-      case Label.User.value => Label.Supervisor.value
+      case Label.User => Label.Supervisor
       // @formatter:off
-      case s"${Label.Worker.value}-$id" => Label.Worker.value
+      case s"${Label.Worker}-$id" => Label.Worker
       // @formatter:on
-      case _ => Label.Worker.value
+      case _ => Label.Worker
     }
 
   private[agents] def getAgentIdFromName(name: String): String =
     name match {
-      case Label.User.value => "supervisor"
+      case Label.User => "supervisor"
       // @formatter:off
-      case s"${Label.Worker.value}-$id" => id
+      case s"${Label.Worker}-$id" => id
       // @formatter:on
-      case _ => Label.Unknown.value
+      case _ => Label.Unknown
     }
 
   @tailrec
-  private[agents] def makeRequestWithRetries[T](request: Request[T], retries: Int = 3)
+  private[agents] def makeRequestWithRetries[T](request: Request[T], retries: Int = 3, sleepDuration: Int = 3000)
     (using context: ActorContext[Command]): Option[T] = {
     if (retries == 0) None
     else {
       val response = request.send()
       context.log.info("makeRequestWithRetries-response")
       if (response.code.isSuccess) Some(response.body)
-      else makeRequestWithRetries(request, retries - 1)
+      else {
+        Thread.sleep(sleepDuration)
+        makeRequestWithRetries(request, retries - 1, sleepDuration * 2)
+      }
     }
   }
 
-  private[agents] def askLlm(prompt: String)(using context: ActorContext[Command]): Option[String] =
+  private[agents] def askLlm(prompt: String)(using context: ActorContext[Command]): Option[String] = {
     val requestBody =
       Json.obj {
         "contents" -> Json.arr {
@@ -145,24 +148,37 @@ object Agent {
           .downField("candidates").downArray
           .downField("content")
           .downField("parts").downArray
-          .get[String]("text").toOption
+          .get[String]("text").map(sanitizeJsonContent).toOption
       }
     }
-  end askLlm
+  }
 
-  private[agents] def standardizePrompt(
-    instructions: Option[String] = None, input: Option[String] = None
-  ): String =
+  private def sanitizeJsonContent(json: String): String =
+    json.replaceAll("(?s)```(?:json)?", "").trim
+
+  private[agents] def makePrompt(
+    instructionsList: List[String] = Nil, inputList: List[String] = Nil
+  ): String = {
+    val instructions = instructionsList.map { s =>
+      s"    <Instructions>\n      ${s.trim}\n    </Instructions>"
+    }.mkString("\n")
+    val input = inputList.map { s =>
+      s"    <Input>\n      ${s.trim}\n    </Input>"
+    }.mkString("\n")
     s"""
        |<Prompt>
-       |  <Instructions>${instructions.getOrElse("").trim}</Instructions>
-       |  <Input>${input.getOrElse("").trim}</Input>
+       |  <InstructionsList>
+       |$instructions
+       |  </InstructionsList>
+       |  <InputList>
+       |$input
+       |  </InputList>
        |</Prompt>
        |""".stripMargin
+  }
 
   private[agents] def getContentFromJsonField(json: String, field: String): String = {
-    val cleaned = json.replaceAll("(?s)```(?:json)?", "").trim
-    parse(cleaned).toOption
+    parse(sanitizeJsonContent(json)).toOption
       .flatMap(_.hcursor.get[String](field).toOption)
       .getOrElse("")
   }

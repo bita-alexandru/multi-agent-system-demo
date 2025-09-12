@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mihai Ionescu - Levi9 Profile</title>
+    <style>
+        :root {
+            --levi9-navy-dark: #1A2F45; /* Primary Levi9 Navy */
+            --levi9-navy-medium: #34495E; /* Secondary Navy/Dark Gray */
+            --levi9-blue-accent: #5D8AA8; /* A lighter blue accent */
+            --levi9-white: #FFFFFF;
+            --text-color-dark: #333; /* For general text readability */
+            --text-color-light: #555;
+            --field-background: #F8F8F8; /* Light background for editable fields */
+            --field-border: #E0E0E0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--levi9-white);
+            color: var(--text-color-dark);
+            max-width: 960px;
+            margin: 20px auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--field-border);
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .logo {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 80px; /* Adjust size as needed */
+            height: auto;
+        }
+
+        h1 {
+            color: var(--levi9-navy-dark);
+            font-size: 2.8em;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        h2.job-title {
+            color: var(--levi9-navy-medium);
+            font-size: 1.5em;
+            margin-top: 0;
+            font-weight: 400;
+        }
+
+        .profile-section {
+            margin-bottom: 25px;
+            padding: 15px 0;
+            border-top: 1px solid var(--field-border);
+        }
+
+        .profile-section:first-of-type {
+            border-top: none;
+        }
+
+        .section-title {
+            color: var(--levi9-navy-dark);
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '›';
+            color: var(--levi9-blue-accent);
+            margin-right: 8px;
+            font-size: 1.5em;
+            line-height: 0;
+            vertical-align: middle;
+        }
+
+        .field-label {
+            font-weight: 600;
+            color: var(--levi9-navy-medium);
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.95em;
+        }
+
+        .editable-text, .editable-list-item {
+            display: inline-block;
+            min-width: 100px;
+            padding: 8px 12px;
+            border: 1px solid var(--field-border);
+            border-radius: 4px;
+            background-color: var(--field-background);
+            margin-bottom: 8px;
+            transition: all 0.2s ease-in-out;
+            color: var(--text-color-dark);
+            word-wrap: break-word; /* Allow long text to wrap */
+            white-space: pre-wrap; /* Preserve whitespace and allow wrapping */
+        }
+
+        .editable-text:focus, .editable-list-item:focus {
+            outline: none;
+            border-color: var(--levi9-blue-accent);
+            box-shadow: 0 0 0 2px rgba(93, 138, 168, 0.2);
+            background-color: var(--levi9-white);
+        }
+
+        .editable-text.full-width {
+            width: calc(100% - 24px); /* Account for padding */
+            min-height: 40px; /* For multi-line text */
+        }
+
+        .editable-list-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 5px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .editable-list-item {
+            background-color: var(--levi9-navy-dark);
+            color: var(--levi9-white);
+            padding: 6px 10px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            border: none;
+            cursor: text;
+        }
+        .editable-list-item:focus {
+             background-color: var(--levi9-navy-medium);
+        }
+
+        .remove-item-btn {
+            background: none;
+            border: none;
+            color: var(--levi9-white);
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0 3px;
+            font-size: 1em;
+            line-height: 1;
+        }
+        .remove-item-btn:hover {
+            color: #ffcccc;
+        }
+
+        .add-item-btn {
+            background-color: var(--levi9-blue-accent);
+            color: var(--levi9-white);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s ease;
+            margin-left: 5px;
+        }
+        .add-item-btn:hover {
+            background-color: #4a7d9e;
+        }
+
+        .list-management {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        /* Basic form for adding new item */
+        .add-new-item-input {
+            padding: 8px 12px;
+            border: 1px solid var(--field-border);
+            border-radius: 4px;
+            margin-right: 5px;
+            flex-grow: 1;
+            max-width: 200px;
+        }
+
+        /* Ensure contenteditable elements look like text when not focused */
+        [contenteditable="true"]:empty:before {
+            content: attr(placeholder);
+            color: var(--text-color-light);
+            display: inline-block; /* Required for :before pseudo-element on empty inline elements */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://images.teamtailor-cdn.com/images/s3/teamtailor-production/logotype-v3/image_uploads/fc5767be-b952-4826-9971-ef34ccc1dcaa/original.png" alt="Levi9 Logo" class="logo">
+
+        <div class="header">
+            <h1 id="employeeName" contenteditable="true" placeholder="Employee Name">Mihai Ionescu</h1>
+            <h2 id="jobTitle" class="job-title" contenteditable="true" placeholder="Job Title">Junior Talent Recruiter</h2>
+        </div>
+
+        <div class="profile-section">
+            <h3 class="section-title">About Me</h3>
+            <div id="aboutMe" class="editable-text full-width" contenteditable="true" placeholder="Enthusiastic and driven HR professional...">
+                Enthusiastic and driven HR professional with 1.5 years of experience, specializing in talent acquisition and candidate engagement.
+                Passionate about connecting with people and finding the right talent to drive organizational success. Eager to contribute
+                to a dynamic recruitment team and develop expertise in the IT industry.
+                
+            </div>
+        </div>
+
+        <div class="profile-section">
+            <h3 class="section-title">Contact Information</h3>
+            <p><span class="field-label">Email:</span> <span id="email" class="editable-text" contenteditable="true" placeholder="email@levi9.com">mihai.ionescu@email.com</span></p>
+            <p><span class="field-label">Phone Number:</span> <span id="phoneNumber" class="editable-text" contenteditable="true" placeholder="+XX XXX XXX XXXX">+40 733 567 890</span></p>
+            <p><span class="field-label">Address:</span> <span id="address" class="editable-text full-width" contenteditable="true" placeholder="Street, City, Country">Str. Anastasie Panu, Nr. 7, Iasi, Romania</span></p>
+            <p><span class="field-label">LinkedIn:</span> <span id="linkedin" class="editable-text full-width" contenteditable="true" placeholder="linkedin.com/in/yourprofile">https://linkedin.com/in/mihaiionescu</span></p>
+        </div>
+
+        <div class="profile-section">
+            <h3 class="section-title">Levi9 Details</h3>
+            <p><span class="field-label">Accumulated Tenure:</span> <span id="tenure" class="editable-text" contenteditable="true" placeholder="e.g., 1 year, 3 months">Less than 1 month</span></p>
+        </div>
+
+        <div class="profile-section">
+            <h3 class="section-title">Skills</h3>
+            <h4>Main Skills:</h4>
+            <div id="mainSkillsList" class="editable-list-container">
+                <span class="editable-list-item" contenteditable="true">Talent Sourcing <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+                <span class="editable-list-item" contenteditable="true">Candidate Screening <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+                <span class="editable-list-item" contenteditable="true">Interviewing <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+                <span class="editable-list-item" contenteditable="true">Communication <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+                <span class="editable-list-item" contenteditable="true">ATS Management <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+            </div>
+            <div class="list-management">
+                <input type="text" id="newMainSkill" class="add-new-item-input" placeholder="Add new main skill">
+                <button type="button" class="add-item-btn" onclick="addItem('mainSkillsList', 'newMainSkill')">Add Main Skill</button>
+            </div>
+
+            <h4>Secondary Skills:</h4>
+            <div id="secondarySkillsList" class="editable-list-container">
+                <span class="editable-list-item" contenteditable="true">LinkedIn Recruiter <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+                <span class="editable-list-item" contenteditable="true">Employer Branding <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+                <span class="editable-list-item" contenteditable="true">Onboarding <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+                <span class="editable-list-item" contenteditable="true">HR Administration <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+                <span class="editable-list-item" contenteditable="true">Microsoft Office Suite <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+                <span class="editable-list-item" contenteditable="true">Time Management <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+                <span class="editable-list-item" contenteditable="true">Active Listening <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+                <span class="editable-list-item" contenteditable="true">Problem Solving <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+            </div>
+            <div class="list-management">
+                <input type="text" id="newSecondarySkill" class="add-new-item-input" placeholder="Add new secondary skill">
+                <button type="button" class="add-item-btn" onclick="addItem('secondarySkillsList', 'newSecondarySkill')">Add Secondary Skill</button>
+            </div>
+        </div>
+
+        <div class="profile-section">
+            <h3 class="section-title">Superpowers & Hobbies</h3>
+            <h4>Superpowers:</h4>
+            <div id="superpowersList" class="editable-list-container">
+                <!-- Empty for now, as no data provided -->
+            </div>
+            <div class="list-management">
+                <input type="text" id="newSuperpower" class="add-new-item-input" placeholder="Add new superpower">
+                <button type="button" class="add-item-btn" onclick="addItem('superpowersList', 'newSuperpower')">Add Superpower</button>
+            </div>
+
+            <h4>Hobbies:</h4>
+            <div id="hobbiesList" class="editable-list-container">
+                <span class="editable-list-item" contenteditable="true">Networking Events <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+                <span class="editable-list-item" contenteditable="true">Reading HR Blogs <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+                <span class="editable-list-item" contenteditable="true">Volunteering <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+                <span class="editable-list-item" contenteditable="true">Playing Football <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+                <span class="editable-list-item" contenteditable="true">Podcasts <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+            </div>
+            <div class="list-management">
+                <input type="text" id="newHobby" class="add-new-item-input" placeholder="Add new hobby">
+                <button type="button" class="add-item-btn" onclick="addItem('hobbiesList', 'newHobby')">Add Hobby</button>
+            </div>
+        </div>
+
+        <div class="profile-section">
+            <h3 class="section-title">Personal Details</h3>
+            <p><span class="field-label">Birthday:</span> <span id="birthday" class="editable-text" contenteditable="true" placeholder="DD Month YYYY"></span></p>
+            <p><span class="field-label">Age:</span> <span id="age" class="editable-text" contenteditable="true" placeholder="e.g., 30"></span></p>
+            <p><span class="field-label">Nationality:</span> <span id="nationality" class="editable-text" contenteditable="true" placeholder="e.g., Romanian"></span></p>
+            <p><span class="field-label">Gender:</span> <span id="gender" class="editable-text" contenteditable="true" placeholder="e.g., Male/Female/Non-binary"></span></p>
+            <p><span class="field-label">Shirt Size:</span> <span id="shirtSize" class="editable-text" contenteditable="true" placeholder="e.g., M, L, XL"></span></p>
+        </div>
+
+        <div class="profile-section">
+            <h3 class="section-title">Preferences</h3>
+            <h4>Food Preferences:</h4>
+            <div id="foodPreferencesList" class="editable-list-container">
+                <!-- Empty for now, as no data provided -->
+            </div>
+            <div class="list-management">
+                <input type="text" id="newFoodPreference" class="add-new-item-input" placeholder="Add new food preference">
+                <button type="button" class="add-item-btn" onclick="addItem('foodPreferencesList', 'newFoodPreference')">Add Food Preference</button>
+            </div>
+
+            <h4>Beverage Preferences:</h4>
+            <div id="beveragePreferencesList" class="editable-list-container">
+                <!-- Empty for now, as no data provided -->
+            </div>
+            <div class="list-management">
+                <input type="text" id="newBeveragePreference" class="add-new-item-input" placeholder="Add new beverage preference">
+                <button type="button" class="add-item-btn" onclick="addItem('beveragePreferencesList', 'newBeveragePreference')">Add Beverage Preference</button>
+            </div>
+        </div>
+
+        <div class="profile-section">
+            <h3 class="section-title">Other</h3>
+            <h4>Language Skills:</h4>
+            <div id="languageSkillsList" class="editable-list-container">
+                <span class="editable-list-item" contenteditable="true">Romanian: Native <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+                <span class="editable-list-item" contenteditable="true">English: Fluent <button type="button" class="remove-item-btn" onclick="removeItem(this)">x</button></span>
+            </div>
+            <div class="list-management">
+                <input type="text" id="newLanguage" class="add-new-item-input" placeholder="Add new language skill">
+                <button type="button" class="add-item-btn" onclick="addItem('languageSkillsList', 'newLanguage')">Add Language</button>
+            </div>
+
+            <h4>Pets:</h4>
+            <div id="petsList" class="editable-list-container">
+                <!-- Empty for now, as no data provided, but ready for user input -->
+            </div>
+            <div class="list-management">
+                <input type="text" id="newPet" class="add-new-item-input" placeholder="Add pet's name">
+                <button type="button" class="add-item-btn" onclick="addItem('petsList', 'newPet')">Add Pet</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addItem(listId, inputId) {
+            const listContainer = document.getElementById(listId);
+            const inputField = document.getElementById(inputId);
+            const newItemText = inputField.value.trim();
+
+            if (newItemText) {
+                const newItem = document.createElement('span');
+                newItem.className = 'editable-list-item';
+                newItem.setAttribute('contenteditable', 'true');
+                newItem.textContent = newItemText; // Set text content
+
+                const removeButton = document.createElement('button');
+                removeButton.type = 'button';
+                removeButton.className = 'remove-item-btn';
+                removeButton.textContent = 'x';
+                removeButton.onclick = function() { removeItem(this); };
+
+                newItem.appendChild(removeButton);
+                listContainer.appendChild(newItem);
+                inputField.value = ''; // Clear the input field
+                inputField.focus(); // Keep focus for quick additions
+            }
+        }
+
+        function removeItem(buttonElement) {
+            const itemToRemove = buttonElement.parentNode;
+            itemToRemove.parentNode.removeChild(itemToRemove);
+        }
+
+        // Set initial placeholder content for empty editable elements
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('[contenteditable="true"]').forEach(elem => {
+                // Check if the element is empty and doesn't already have textContent or innerHTML
+                if (elem.textContent.trim() === '' && !elem.getAttribute('placeholder')) {
+                    // If using a CSS :empty:before pseudo-element, no need to add text directly
+                    // This JS block for initial placeholder is mainly for non-list items where placeholder attribute might not be fully supported by contenteditable attribute directly
+                }
+            });
+        });
+    </script>
+</body>
+</html>
