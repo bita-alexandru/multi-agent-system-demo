@@ -68,7 +68,7 @@ object SupervisorAgent extends Agent {
     commandProps.input match {
       case secret :: Nil =>
         val cwd = new File(".").getCanonicalPath
-        val profilePath = s"$cwd/server/DB/EMPLOYEES/PROFILES/profile_$secret"
+        val profilePath = s"$cwd/server/DB/EMPLOYEES/PROFILES/profile_$secret.html"
         val profileFile = new File(profilePath)
         val docsPath = s"$cwd/server/DB/EMPLOYEES/DOCS/docs_$secret"
         val docsDirectory = new File(docsPath)
@@ -76,15 +76,14 @@ object SupervisorAgent extends Agent {
           val profileUri = profileFile.toURI
           val docsUri = docsDirectory.toURI
           if (Desktop.isDesktopSupported && Desktop.getDesktop.isSupported(Desktop.Action.BROWSE)) {
-            Desktop.getDesktop.browse(profileUri) // opens in the system default browser
-            Desktop.getDesktop.browse(docsUri) // opens in the system default browser
+            Desktop.getDesktop.browse(profileUri)
+            docsDirectory.listFiles().foreach(doc => Desktop.getDesktop.browse(doc.toURI))
           } else {
             context.log.info(err("SupervisorAgent doReview Desktop.Action.Browse not supported"))
           }
         }
         println("Does everything look good?")
         val userFeedback = takeInput().getOrElse("yes")
-//        val userFeedback = "no, i want my signature to be just my name initials"
         context.self ! Command.End(props = CommandProps(input = List(secret, userFeedback)))
         Behaviors.same
       case _ =>
