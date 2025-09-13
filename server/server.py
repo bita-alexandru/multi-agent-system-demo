@@ -5,8 +5,8 @@ from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
 BASE_DIR = Path(__file__).resolve().parent
-EMPLOYEES_CVS_DIR = BASE_DIR / "DB" / "EMPLOYEES" / "CVS"
-EMPLOYEES_IDS_DIR = BASE_DIR / "DB" / "EMPLOYEES" / "IDS"
+EMPLOYEES_CVS_DIR = BASE_DIR / "DB" / "EMPLOYEES" / "CVs"
+EMPLOYEES_IDS_DIR = BASE_DIR / "DB" / "EMPLOYEES" / "IDs"
 EMPLOYEES_DOCS_DIR = BASE_DIR / "DB" / "EMPLOYEES" / "DOCS"
 EMPLOYEES_PROFILES_DIR = BASE_DIR / "DB" / "EMPLOYEES" / "PROFILES"
 INTERNAL_DOCS_DIR = BASE_DIR / "DB" / "INTERNAL" / "DOCS"
