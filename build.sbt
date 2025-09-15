@@ -14,6 +14,6 @@ libraryDependencies += "org.apache.pekko" %% "pekko-actor-typed" % PekkoVersion
 libraryDependencies += "io.circe" %% "circe-yaml" % "1.15.0"
 libraryDependencies += "io.circe" %% "circe-generic" % "0.14.14"
 libraryDependencies += "io.circe" %% "circe-parser" % "0.14.14"
-libraryDependencies += "com.softwaremill.sttp.client4" %% "core" % "4.0.10"
+libraryDependencies += "com.softwaremill.sttp.client4" %% "core" % "4.0.11"
 libraryDependencies += "io.github.cdimascio" % "dotenv-java" % "3.2.0"
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.5.18"

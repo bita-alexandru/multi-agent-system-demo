@@ -1,18 +1,18 @@
 package alex.demo
 package agents
 
-import agents.Agent.{Command, CommandProps, getSystemInstructions}
+import agents.Agent.{Command, CommandProps, getAgentIdFromName, getSystemInstructions}
 
 import io.circe.*
 import io.circe.parser.*
 import cats.syntax.either.*
 import org.apache.pekko.actor.typed.scaladsl.{ActorContext, Behaviors}
-import org.apache.pekko.actor.typed.{ActorRef, Behavior}
-import sttp.client4.Request
-import sttp.client4.quick.*
+import org.apache.pekko.actor.typed.{ActorRef, Behavior, PostStop}
+import sttp.client4.*
 
 import java.io.FileReader
 import scala.annotation.tailrec
+import scala.concurrent.duration.{Duration, DurationInt}
 import scala.util.Try
 
 trait Agent {
@@ -20,7 +20,7 @@ trait Agent {
     Behaviors.setup { context =>
       given ActorContext[Command] = context
 
-      Behaviors.receiveMessage {
+      Behaviors.receiveMessage[Command] {
         case Command.Start(props) =>
           doStart(getSystemInstructions(Command.Start(props)), props)
         case Command.Next(props) =>
@@ -32,6 +32,13 @@ trait Agent {
         case Command.CallTool(props) =>
           doCallTool(getSystemInstructions(Command.CallTool(props)), props)
         case null => Behaviors.same
+      }.receiveSignal {
+        case (context, PostStop) =>
+          context.log.info(s"${getAgentIdFromName(context.self.path.name)} stopped.")
+          Behaviors.same
+        case idk =>
+          context.log.info(s"${context.self.path.name} received <$idk>")
+          Behaviors.same
       }
     }
 
@@ -60,10 +67,13 @@ object Agent {
   object Label {
     val User = "user"
     val Supervisor = "supervisor-agent"
+    val SupervisorId = "Sam-Supervisor"
     val Worker = "worker-agent"
     val Unknown = "unknown"
     val ProfileWorker = "profileWorker"
+    val ProfileWorkerId = "Peter-Profile"
     val DocsWorker = "docsWorker"
+    val DocsWorkerId = "Daisy-Docs"
   }
 
   enum Command(val commandProps: CommandProps = CommandProps()) {
@@ -91,28 +101,28 @@ object Agent {
     name match {
       case Label.User => Label.Supervisor
       // @formatter:off
-      case s"${Label.Worker}-$id" => Label.Worker
+      case s if s.startsWith(s"${Label.Worker}-") => Label.Worker
       // @formatter:on
       case _ => Label.Worker
     }
 
   private[agents] def getAgentIdFromName(name: String): String =
     name match {
-      case Label.User => "supervisor"
+      case Label.User => Label.SupervisorId
       // @formatter:off
-      case s"${Label.Worker}-$id" => id
+      case s if s.startsWith(s"${Label.Worker}-") => s.stripPrefix(s"${Label.Worker}-")
       // @formatter:on
       case _ => Label.Unknown
     }
 
   @tailrec
-  private[agents] def makeRequestWithRetries[T](request: Request[T], retries: Int = 3, sleepDuration: Int = 3000)
+  private[agents] def makeRequestWithRetries[T](request: Request[Either[T, T]], retries: Int = 3, sleepDuration: Int = 1000)
     (using context: ActorContext[Command]): Option[T] = {
     if (retries == 0) None
     else {
-      val response = request.send()
-      context.log.info("makeRequestWithRetries-response")
-      if (response.code.isSuccess) Some(response.body)
+      val backend = DefaultSyncBackend(options = BackendOptions.connectionTimeout(5.minutes))
+      val response = request.readTimeout(Duration.Inf).send(backend)
+      if (response.code.isSuccess) response.body.toOption
       else {
         Thread.sleep(sleepDuration)
         makeRequestWithRetries(request, retries - 1, sleepDuration * 2)
@@ -121,6 +131,7 @@ object Agent {
   }
 
   private[agents] def askLlm(prompt: String)(using context: ActorContext[Command]): Option[String] = {
+    context.log.info(s"${getAgentIdFromName(context.self.path.name)} is prompting the LLM.")
     val requestBody =
       Json.obj {
         "contents" -> Json.arr {
@@ -134,15 +145,15 @@ object Agent {
         }
       }
 
-    val request = quickRequest
+    val request = basicRequest
       .post(uri"$geminiBaseUrl")
       .header("Content-Type", "application/json")
       .header("X-goog-api-key", geminiApiKey)
       .body(requestBody.noSpaces)
 
     val maybeResponse = makeRequestWithRetries(request)
-    context.log.info("askLlm-maybeResponse")
-    maybeResponse.flatMap { response =>
+    context.log.debug(s"askLlm maybeResponse <$maybeResponse>")
+    val x = maybeResponse.flatMap { response =>
       parse(response).toOption.flatMap {
         _.hcursor
           .downField("candidates").downArray
@@ -151,6 +162,7 @@ object Agent {
           .get[String]("text").map(sanitizeJsonContent).toOption
       }
     }
+    x
   }
 
   private def sanitizeJsonContent(json: String): String =

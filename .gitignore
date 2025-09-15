@@ -47,5 +47,4 @@ build/
 .bsp/
 
 .env
-server/DB/EMPLOYEES/PROFILES/
-server/DB/EMPLOYEES/DOCS/
+server/DB/

@@ -17,7 +17,7 @@ supervisor-agent:
     {
       "profileWorker": "<brief and essential instructions about the profile set-up task and relevant user feedback>",
       "docsWorker": "<brief and essential instructions about the documents fill-in task and relevant user feedback>",
-      "thoughts": "<a summary of your thinking process>"
+      "thoughts": "<a very brief summary of your thinking process>"
     }
     Your reply must be a valid JSON that follows the described template.
   next: >
@@ -40,7 +40,7 @@ supervisor-agent:
     {
       "isUserPleased": "true" or "false" depending on their feedback,
       "llmFeedback": a string denoting either a welcome message or points of improvement as previously described,
-      "thoughts": "<a summary of your thinking process>"
+      "thoughts": "<a very brief summary of your thinking process>"
     }
     Your reply must be a valid JSON that follows the described template.
   call-tool: >
@@ -60,7 +60,7 @@ worker-agent:
       "role": either "docsWorker" or "profileWorker" depending on the received input,
       "secret": the secret as a string,
       "userFeedback": the user's special requirements if any as a string or else an empty string,
-      "thoughts": "<a summary of your thinking process>"
+      "thoughts": "<a very brief summary of your thinking process>"
     }
     Your reply must be a valid JSON that follows the described template.
   next: >
@@ -86,7 +86,7 @@ worker-agent:
     You will reply back using the following template:
     {
       "result": "<your taskwork output as a string>",
-      "thoughts": "<a summary of your thinking process>"
+      "thoughts": "<a very brief summary of your thinking process>"
     }
     Your reply must be a valid JSON that follows the described template. Current day is 30 september 2025.
   review: >
@@ -104,7 +104,7 @@ worker-agent:
     {
       "result": the compliant content as a string (either whole content unmodified if it was already compliant, or
     updated to be compliant with no other modifications),
-      "thoughts": "<a summary of your thinking process>"
+      "thoughts": "<a very brief summary of your thinking process>"
     }
   end: >
     No instructions are required for worker-agent.end behaviour.

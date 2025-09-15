@@ -11,7 +11,14 @@ val dotenv = Dotenv.load()
 @main
 def main(): Unit = {
   val supervisorAgent: ActorSystem[Command] = ActorSystem(SupervisorAgent(), Label.Supervisor)
-  val userInput = "mihai"
+  val userInput: String = Iterator
+    .continually {
+      print("Please input your secret code: ")
+      takeInput()
+    }
+    .collectFirst { case Some(input) => input }
+    .get
+
   supervisorAgent ! Command.Start(props = CommandProps(input = List(userInput)))
 }
 
