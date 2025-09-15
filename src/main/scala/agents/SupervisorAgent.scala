@@ -21,14 +21,14 @@ object SupervisorAgent extends Agent {
 
   def doStart(systemInstructions: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command] = {
-    context.log.info(s"${Label.SupervisorId} received a START command.")
+    context.log.info(colorizeActionLog(s"${Label.SupervisorId} received a START command."))
     val prompt = makePrompt(systemInstructions.toList.concat(commandProps.instructions), commandProps.input)
     context.log.debug(prompt)
     askLlm(prompt) match {
       case Some(response) =>
         context.log.debug(response)
         val thoughts = getContentFromJsonField(response, "thoughts")
-        context.log.info(s"${Label.SupervisorId}: $thoughts")
+        context.log.info(colorizeAgentThoughts(Label.SupervisorId, thoughts))
         val profileWorker = context.spawn(WorkerAgent(), s"${Label.Worker}-${Label.ProfileWorkerId}")
         val profileWorkerInstructions = getContentFromJsonField(response, Label.ProfileWorker)
         profileWorker ! Command.Start(
@@ -41,9 +41,11 @@ object SupervisorAgent extends Agent {
           props = CommandProps(input = List(docsWorkerInstructions), from = Some(context.self))
         )
         workerRefs.add(docsWorker.path.name)
-        context.log.info(s"${Label.SupervisorId} delegated tasks to ${workerRefs.toList.map(w => getAgentIdFromName(w)).mkString(", ")}")
+        context.log.info(colorizeActionLog(
+          s"${Label.SupervisorId} delegated tasks to ${workerRefs.toList.map(w => getAgentIdFromName(w)).mkString(", ")}"
+        ))
       case _ =>
-        context.log.info(err(s"Gemini LLM failed to respond to ${getAgentIdFromName(context.self.path.name)}"))
+        context.log.info(colorizeErrorLog(err(s"Gemini LLM failed to respond to ${getAgentIdFromName(context.self.path.name)}")))
         context.log.debug(err("SupervisorAgent doStart askLlm None"))
     }
     Behaviors.same
@@ -51,15 +53,15 @@ object SupervisorAgent extends Agent {
 
   def doNext(systemInstructions: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command] = {
-    context.log.info(s"${Label.SupervisorId} received a NEXT command.")
+    context.log.info(colorizeActionLog(s"${Label.SupervisorId} received a NEXT command."))
     (commandProps.input, commandProps.from) match {
       case (secret :: Nil, Some(workerRef)) =>
-        context.log.info(s"${Label.SupervisorId} received a taskwork completion confirmation from ${getAgentIdFromName(workerRef.path.name)}.")
+        context.log.info(colorizeActionLog(s"${Label.SupervisorId} received a taskwork completion confirmation from ${getAgentIdFromName(workerRef.path.name)}."))
         context.stop(workerRef)
         workerRefs.remove(workerRef.path.name)
         if (workerRefs.isEmpty) context.self ! Command.Review(props = CommandProps(input = List(secret)))
       case _ =>
-        context.log.info(err(s"${getAgentIdFromName(context.self.path.name)} received unknown confirmation"))
+        context.log.info(colorizeErrorLog(err(s"${getAgentIdFromName(context.self.path.name)} received unknown confirmation")))
         context.log.debug(err("SupervisorAgent doNext commandProps.from None"))
     }
     Behaviors.same
@@ -67,7 +69,7 @@ object SupervisorAgent extends Agent {
 
   def doReview(systemInstructions: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command] = {
-    context.log.info(s"${Label.SupervisorId} received a REVIEW command.")
+    context.log.info(colorizeActionLog(s"${Label.SupervisorId} received a REVIEW command."))
     commandProps.input match {
       case secret :: Nil =>
         val cwd = new File(".").getCanonicalPath
@@ -82,15 +84,14 @@ object SupervisorAgent extends Agent {
             Desktop.getDesktop.browse(profileUri)
             docsDirectory.listFiles().foreach(doc => Desktop.getDesktop.browse(doc.toURI))
           } else {
-            context.log.info(err(s"${getAgentIdFromName(context.self.path.name)} can't open the documents in your browser"))
+            context.log.info(colorizeErrorLog(err(s"${getAgentIdFromName(context.self.path.name)} can't open the documents in your browser")))
             context.log.debug(err("SupervisorAgent doReview Desktop.Action.Browse not supported"))
           }
         }
-        print("Check the documents. Does everything look good: ")
-        val userFeedback = takeInput().getOrElse("yes")
+        val userFeedback = takeInput("Check the documents. Does everything look good?").getOrElse("yes")
         context.self ! Command.End(props = CommandProps(input = List(secret, userFeedback)))
       case _ =>
-        context.log.info(err(s"${getAgentIdFromName(context.self.path.name)} got nothing to review"))
+        context.log.info(colorizeErrorLog(err(s"${getAgentIdFromName(context.self.path.name)} got nothing to review")))
         context.log.debug(err("SupervisorAgent doReview commandProps.input None"))
     }
     Behaviors.same
@@ -98,21 +99,21 @@ object SupervisorAgent extends Agent {
 
   def doEnd(systemInstructions: Option[String], commandProps: CommandProps)
     (using context: ActorContext[Command]): Behavior[Command] = {
-    context.log.info(s"${Label.SupervisorId} received an END command.")
+    context.log.info(colorizeActionLog(s"${Label.SupervisorId} received an END command."))
     val prompt = makePrompt(systemInstructions.toList.concat(commandProps.instructions), commandProps.input)
     (askLlm(prompt), commandProps.input) match {
       case (Some(response), secret :: userFeedback :: Nil) =>
         val isUserPleased = getContentFromJsonField(response, "isUserPleased")
         val llmFeedback = getContentFromJsonField(response, "llmFeedback")
         val thoughts = getContentFromJsonField(response, "thoughts")
-        context.log.info(s"${Label.SupervisorId}: $thoughts")
+        context.log.info(colorizeAgentThoughts(Label.SupervisorId, thoughts))
         if (isUserPleased == "false") {
           if (callDeleteEmployeeDocsTool(secret, context.self.path.name).isEmpty) {
-            context.log.info(err(s"${getAgentIdFromName(context.self.path.name)}'s call to DeleteEmployeeDocs() tool failed"))
+            context.log.info(colorizeErrorLog(err(s"${getAgentIdFromName(context.self.path.name)}'s call to DeleteEmployeeDocs() tool failed")))
             context.log.debug(err("SupervisorAgent doEnd callDeleteEmployeeDocsTool None"))
           }
           if (callDeleteEmployeeProfileTool(secret, context.self.path.name).isEmpty) {
-            context.log.info(err(s"${getAgentIdFromName(context.self.path.name)}'s call to DeleteEmployeeProfile() tool failed"))
+            context.log.info(colorizeErrorLog(err(s"${getAgentIdFromName(context.self.path.name)}'s call to DeleteEmployeeProfile() tool failed")))
             context.log.debug(err("SupervisorAgent doEnd callDeleteEmployeeProfileTool None"))
           }
           context.self ! Command.Start(props = CommandProps(instructions = List(llmFeedback), input = List(secret)))
@@ -120,7 +121,7 @@ object SupervisorAgent extends Agent {
           println(llmFeedback)
         }
       case (maybeResponse, maybeInput) =>
-        context.log.info(err(s"either Gemini LLM failed to respond or the required input is missing for ${getAgentIdFromName(context.self.path.name)}"))
+        context.log.info(colorizeErrorLog(err(s"either Gemini LLM failed to respond or the required input is missing for ${getAgentIdFromName(context.self.path.name)}")))
         context.log.debug(err(s"SupervisorAgent doEnd askLlm <$maybeResponse> commandProps.input <$maybeInput>"))
     }
     Behaviors.same
@@ -133,7 +134,7 @@ object SupervisorAgent extends Agent {
 
   private def callDeleteEmployeeDocsTool(secret: String, caller: String)
     (using context: ActorContext[Command]): Option[String] = {
-    context.log.info(s"${getAgentIdFromName(caller)} is calling the DeleteEmployeeDocs('$secret') tool.")
+    context.log.info(colorizeActionLog(s"${getAgentIdFromName(caller)} is calling the DeleteEmployeeDocs('$secret') tool."))
     val request = basicRequest
       .delete(uri"$serverBaseUrl:$serverPort/${employeeDocsEndpoint(0)}/${employeeDocsEndpoint(1)}?secret=$secret&caller=$caller")
       .header("Content-Type", "text/html")
@@ -142,7 +143,7 @@ object SupervisorAgent extends Agent {
 
   private def callDeleteEmployeeProfileTool(secret: String, caller: String)
     (using context: ActorContext[Command]): Option[String] = {
-    context.log.info(s"${getAgentIdFromName(caller)} is calling the DeleteEmployeeProfile('$secret') tool.")
+    context.log.info(colorizeActionLog(s"${getAgentIdFromName(caller)} is calling the DeleteEmployeeProfile('$secret') tool."))
     val request = basicRequest
       .delete(uri"$serverBaseUrl:$serverPort/${employeeProfileEndpoint(0)}/${employeeProfileEndpoint(1)}?secret=$secret&caller=$caller")
       .header("Content-Type", "text/html")

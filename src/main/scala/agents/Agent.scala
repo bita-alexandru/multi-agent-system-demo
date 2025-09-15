@@ -1,7 +1,7 @@
 package alex.demo
 package agents
 
-import agents.Agent.{Command, CommandProps, getAgentIdFromName, getSystemInstructions}
+import agents.Agent.{Command, CommandProps, colorizeActionLog, getAgentIdFromName, getSystemInstructions}
 
 import io.circe.*
 import io.circe.parser.*
@@ -34,10 +34,10 @@ trait Agent {
         case null => Behaviors.same
       }.receiveSignal {
         case (context, PostStop) =>
-          context.log.info(s"${getAgentIdFromName(context.self.path.name)} stopped.")
+          context.log.info(colorizeActionLog(s"${getAgentIdFromName(context.self.path.name)} stopped."))
           Behaviors.same
         case idk =>
-          context.log.info(s"${context.self.path.name} received <$idk>")
+          context.log.info(colorizeActionLog(s"${context.self.path.name} received <$idk>"))
           Behaviors.same
       }
     }
@@ -115,6 +115,34 @@ object Agent {
       case _ => Label.Unknown
     }
 
+  private def colorizeAgentId(id: String, resetColor: String = "\u001b[0;0m"): String =
+    id match {
+      case Label.SupervisorId => s"\u001b[1;36m$id$resetColor"
+      case Label.DocsWorkerId => s"\u001b[1;33m$id$resetColor"
+      case Label.ProfileWorkerId => s"\u001b[1;35m$id$resetColor"
+      case _ => s"\u001b[37m$id\u001b$resetColor"
+    }
+
+  private[agents] def colorizeActionLog(log: String): String = {
+    List(Label.SupervisorId, Label.DocsWorkerId, Label.ProfileWorkerId)
+      .foldLeft(s"\u001b[32m$log\u001b[0m")((acc, agentId) => acc.replace(agentId, colorizeAgentId(agentId, "\u001b[0;32m")))
+  }
+
+  private[agents] def colorizeErrorLog(log: String): String = {
+    List(Label.SupervisorId, Label.DocsWorkerId, Label.ProfileWorkerId)
+      .foldLeft(s"\u001b[31m$log\u001b[0m")((acc, agentId) => acc.replace(agentId, colorizeAgentId(agentId, "\u001b[0;31m")))
+  }
+
+  private[agents] def colorizeAgentThoughts(id: String, thoughts: String): String = {
+    val bgColor = id match {
+      case Label.SupervisorId => "\u001b[46m"
+      case Label.DocsWorkerId => "\u001b[43m"
+      case Label.ProfileWorkerId => "\u001b[45m"
+      case _ => "\u001b[0;0m"
+    }
+    s"${colorizeAgentId(id)}: \u001b[30m$bgColor$thoughts\u001b[0;0m"
+  }
+
   @tailrec
   private[agents] def makeRequestWithRetries[T](request: Request[Either[T, T]], retries: Int = 3, sleepDuration: Int = 1000)
     (using context: ActorContext[Command]): Option[T] = {
@@ -131,7 +159,7 @@ object Agent {
   }
 
   private[agents] def askLlm(prompt: String)(using context: ActorContext[Command]): Option[String] = {
-    context.log.info(s"${getAgentIdFromName(context.self.path.name)} is prompting the LLM.")
+    context.log.info(colorizeActionLog(s"${getAgentIdFromName(context.self.path.name)} is prompting the LLM."))
     val requestBody =
       Json.obj {
         "contents" -> Json.arr {
@@ -151,9 +179,9 @@ object Agent {
       .header("X-goog-api-key", geminiApiKey)
       .body(requestBody.noSpaces)
 
-    val maybeResponse = makeRequestWithRetries(request)
+        val maybeResponse = makeRequestWithRetries(request)
     context.log.debug(s"askLlm maybeResponse <$maybeResponse>")
-    val x = maybeResponse.flatMap { response =>
+    maybeResponse.flatMap { response =>
       parse(response).toOption.flatMap {
         _.hcursor
           .downField("candidates").downArray
@@ -162,7 +190,6 @@ object Agent {
           .get[String]("text").map(sanitizeJsonContent).toOption
       }
     }
-    x
   }
 
   private def sanitizeJsonContent(json: String): String =

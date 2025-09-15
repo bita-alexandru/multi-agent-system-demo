@@ -13,8 +13,7 @@ def main(): Unit = {
   val supervisorAgent: ActorSystem[Command] = ActorSystem(SupervisorAgent(), Label.Supervisor)
   val userInput: String = Iterator
     .continually {
-      print("Please input your secret code: ")
-      takeInput()
+      takeInput("Please input your secret code:")
     }
     .collectFirst { case Some(input) => input }
     .get
@@ -22,5 +21,8 @@ def main(): Unit = {
   supervisorAgent ! Command.Start(props = CommandProps(input = List(userInput)))
 }
 
-def takeInput(): Option[String] =
+def takeInput(prompt: String): Option[String] = {
+  println(s"\u001b[30m\u001b[47m$prompt\u001b[0m")
+  print("> ")
   Some(scala.io.StdIn.readLine().trim).filter(_.nonEmpty)
+}
