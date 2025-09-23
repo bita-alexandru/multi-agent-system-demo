@@ -118,8 +118,8 @@ object Agent {
   private def colorizeAgentId(id: String, resetColor: String = "\u001b[0;0m"): String =
     id match {
       case Label.SupervisorId => s"\u001b[1;36m$id$resetColor"
-      case Label.DocsWorkerId => s"\u001b[1;33m$id$resetColor"
-      case Label.ProfileWorkerId => s"\u001b[1;35m$id$resetColor"
+      case Label.DocsWorkerId => s"\u001b[1;35m$id$resetColor"
+      case Label.ProfileWorkerId => s"\u001b[1;33m$id$resetColor"
       case _ => s"\u001b[37m$id\u001b$resetColor"
     }
 
@@ -136,8 +136,8 @@ object Agent {
   private[agents] def colorizeAgentThoughts(id: String, thoughts: String): String = {
     val bgColor = id match {
       case Label.SupervisorId => "\u001b[46m"
-      case Label.DocsWorkerId => "\u001b[43m"
-      case Label.ProfileWorkerId => "\u001b[45m"
+      case Label.DocsWorkerId => "\u001b[45m"
+      case Label.ProfileWorkerId => "\u001b[43m"
       case _ => "\u001b[0;0m"
     }
     s"${colorizeAgentId(id)}: \u001b[30m$bgColor$thoughts\u001b[0;0m"
